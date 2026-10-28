@@ -1,16 +1,24 @@
 # Using Internship Agent from ChatGPT Chat / Work
 
-## Check capability first
+## Current validated state
 
-The official OpenAI Help article currently documents creating custom MCP connections for Business and Enterprise/Edu workspaces. Plugin tutorials also describe personal plugins. Product permissions may change or depend on account/workspace settings; **do not assume a personal Plus plan can add an arbitrary MCP**. Check for Plugins > Add custom MCP server in your actual account. The core CLI works regardless.
+The operator confirmed custom MCP Server URL, Tunnel and OAuth controls in their
+ChatGPT Plus account. Do not substitute an old plan restriction for that observed
+capability. Account/workspace policy still applies; see the official
+[custom MCP setup](https://developers.openai.com/api/docs/guides/custom-mcp-server).
+Local SDK interoperability is tested; a ChatGPT cloud connection is not yet proven.
 
 ## Available custom MCP connection
 
-1. Install and run the Python MCP v2 adapter and validate it with MCP Inspector.
-2. Add **authentication/authorization**, access controls, rate limiting and private network safeguards before exposing any personal-data tool.
-3. Use an authenticated hosted HTTPS MCP endpoint or supported Secure MCP Tunnel; cloud ChatGPT cannot reach `localhost` directly.
-4. In ChatGPT Plugins, use Add custom MCP server (if available), verify discovered tools, install the connection and invoke it in Chat or Work. The `docs/CHATGPT_INSTRUCTIONS.md` document can be used as persistent project/plugin skill instructions.
-5. Initially enable discovery, ranking, preview and prepare tools; retain explicit human approval for application actions.
+1. Follow [local validation](MCP_VALIDATION.md): the entry point is stdio only,
+   with `application_summary`, `rank_jobs` and `preview_application`.
+2. Review the [zero-cost connection proposal](MCP_CONNECTION_OPTIONS.md). Stop for
+   architecture approval before implementing an HTTP/OAuth endpoint or tunnel.
+3. After approval, validate authentication on loopback before enabling external
+   transport. Cloud ChatGPT cannot directly reach `localhost` or stdio.
+4. Prove discovery and a read-only call from the actual account before claiming
+   cloud integration. Do not expose approval, preparation, submission recording,
+   Google operations, discovery/import or other state-changing tools initially.
 
 ## Without custom MCP permission
 
@@ -20,12 +28,13 @@ The official OpenAI Help article currently documents creating custom MCP connect
 
 ## Distinct responsibilities
 
-- MCP server: job data, stable IDs, status transitions, file generation.
+- Initial MCP server: read-only counts, rankings and narrowly projected previews.
+- Local CLI: separately authorized ingestion, preparation, tracking and Google sync.
 - ChatGPT: reasoning, decisions, job-specific tailoring strategy, outreach drafting, user approvals.
 - Work: permitted browser application workflows with MFA/CAPTCHA handoff; never bypass anti-bot or recruiter-site restrictions.
-- Google Drive/Sheets/Gmail: persistent shared records and communications. Google OAuth-based local reconciliation was introduced in v0.3; live authorization and production behavior remain unverified.
+- Google Drive/Sheets/Gmail: separate permissions and credentials. Basic local
+  synthetic Sheets validation is recorded in [Issue #2 evidence](SHEETS_VALIDATION.md).
 
-Sources:
-- https://help.openai.com/en/articles/12584461-connecting-custom-mcp-servers-in-chatgpt
-- https://developers.openai.com/plugins/quickstart
-- https://developers.openai.com/plugins/deploy/connect-chatgpt
+No API billing, metered resource, paid tunnel/domain or extra subscription is
+authorized. OpenAI Secure MCP Tunnel is not assumed free; its cost eligibility
+remains unconfirmed. Keep the local fallback if no compliant cloud path is proven.

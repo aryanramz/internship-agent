@@ -114,7 +114,7 @@ This sync is deliberately not fully transactional across multiple requests: if G
 ## ChatGPT integration options
 
 - **Native ChatGPT path today:** Ask ChatGPT to read relevant Gmail messages and update the connected tracker using its Gmail/Drive plugins, without expecting it to call your local Python service. You can export reviewed job metadata as JSON and import it with `internship-agent import-jobs path.json`.
-- **Direct MCP when allowed:** Run `python -m internship_agent.mcp_server`, connect via a supported authenticated HTTPS MCP endpoint or secure tunnel, and invoke `ingest_google_job_alerts`, `list_pending_job_alerts`, `rank_jobs`, `preview_google_sheet_sync`, etc. Never expose the local server without authentication. ChatGPT Plus does not currently have the same general custom MCP connection privileges as Business/Enterprise/Edu; verify actual account options instead of assuming access.
+- **Initial MCP connection:** The [local read-only adapter](MCP_VALIDATION.md) exposes only summary, ranking and application preview. Google tools are deliberately absent. The operator has confirmed custom MCP controls in Plus; [authenticated zero-cost connectivity](MCP_CONNECTION_OPTIONS.md) still requires architecture approval and real ChatGPT validation.
 - **Task Scheduler (local):** Schedule `internship-agent discover` and `internship-agent ingest-alerts` to run on Windows after local consent. A cloud task cannot invoke the local CLI without an independently established connection.
 
 ## Google API reference

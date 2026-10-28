@@ -16,7 +16,7 @@ Internship Agent is an open-source Python project that combines employer job-boa
 | Documents | Single-column DOCX resume and cover-letter draft from a verified profile | No guarantee of passing ATS; requires human review |
 | Tracking | SQLite status ledger with audit events and explicit approval step | Records confirmation evidence; doesn't independently verify submission |
 | Google | Gmail lead staging; exact Sheets previews, confirmed sync and local audit | Basic synthetic Sheets sync live-tested by operator; Gmail and broader scenarios remain unqualified |
-| MCP | Structured tool surface for supported MCP clients | ChatGPT client access, remote authentication, and hosting not configured |
+| MCP | Locally validated read-only summary, ranking and preview tools over stdio | Authenticated ChatGPT cloud connection awaits architecture approval |
 
 ## Quickstart (Windows, Python 3.11+)
 
@@ -51,7 +51,7 @@ python -m pytest -q
 
 ## ChatGPT and Work integration
 
-The primary interface is intended to be ChatGPT Chat/Work; the backend offers an MCP server and a local CLI. Install the optional MCP extra with `python -m pip install -e '.[mcp]'`. The server code alone does **not** make it discoverable from a ChatGPT cloud session. Actual custom MCP access depends on your account/workspace, connection options, and authorized hosting. **Do not publicly tunnel this development server:** the current implementation lacks production authentication. See [integration options](docs/INTEGRATION.md) and [ChatGPT workflow guide](docs/CHATGPT_BRIDGE.md).
+The primary interface is intended to be ChatGPT Chat/Work; the backend offers a read-only stdio MCP adapter and a local CLI. Install the optional MCP extra with `python -m pip install -e '.[mcp]'`. SDK 2.3.0 initialization/discovery and tool calls are [validated locally](docs/MCP_VALIDATION.md). The operator has confirmed custom MCP controls in Plus, but cloud access is **not yet configured**. Review the [zero-additional-cost architecture proposal](docs/MCP_CONNECTION_OPTIONS.md); no external endpoint or tunnel is implemented before approval. See [integration options](docs/INTEGRATION.md).
 
 ChatGPT can independently work with connected Google Sheets and Gmail for user-approved workflows without a direct MCP connection; that is **not** equivalent to executing the local backend. A standalone script cannot use a ChatGPT subscription as an unmetered model API.
 
@@ -89,13 +89,13 @@ python -m compileall -q src
 
 GitHub Actions runs tests across supported Python versions and checks for common accidental private-file commits. The file-checker is not a substitute for full secret scanning or security review.
 
-The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operator-reported successful basic live sync and the remaining read-only local checks. Google credentials use a [shared per-user store](docs/GOOGLE_SETUP.md#credential-storage-and-compatibility), independent of `--data`. Install `.[test,google]` for the full offline SDK regression suite; CI does so on every supported Python version.
+The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operator-reported successful basic live sync and the focused local checks. Google credentials use a [shared per-user store](docs/GOOGLE_SETUP.md#credential-storage-and-compatibility), independent of `--data`. Install `.[test,google,mcp]` for the full offline SDK regression suite; CI does so on every supported Python version.
 
 ## Roadmap
 
 - **v0.4 (current):** public repo hygiene, synthetic offline demonstration, CI, documented tradeoffs and release artifacts.
 - **v0.5:** Greenhouse public discovery validated; basic synthetic Sheets OAuth, confirmed append and repeat no-op operator-validated. New credential routing has a focused read-only local follow-up.
-- **v0.6:** human-reviewed tailoring improvements, robust parsing/format QA and validation of MCP client connectivity.
+- **v0.6:** local read-only MCP interoperability validated; authenticated zero-cost ChatGPT connectivity awaits architecture approval and an actual client call. Tailoring/format QA remains future work.
 - **Future:** approved, platform-compliant application assistance; recruiter outreach drafts and confirmation monitoring.
 
 ## Privacy and license
