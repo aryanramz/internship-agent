@@ -1,0 +1,36 @@
+# Python build and test artifacts
+.venv/
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Private local user data and credentials
+data/
+generated/
+demo-output/
+config/profile.json
+config/sources.json
+config/google-oauth-client.json
+.env
+.env.*
+*.db
+*.db-shm
+*.db-wal
+*.sqlite*
+*.log
+**/secrets/
+**/*token.json
+**/*credentials*.json
+*.pem
+*.key
+
+# Editor/system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

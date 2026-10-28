@@ -1,0 +1,120 @@
+{
+  "boards": [
+    {
+      "provider": "simplify_github",
+      "company": "Simplify & Pitt CSC Summer 2027",
+      "token": "summer2027",
+      "enabled": true
+    },
+    {
+      "provider": "remotive",
+      "company": "Remotive remote listings",
+      "token": "global",
+      "enabled": true
+    },
+    {
+      "provider": "jobicy",
+      "company": "Jobicy remote listings",
+      "token": "global",
+      "enabled": true
+    },
+    {
+      "provider": "greenhouse",
+      "company": "Example Greenhouse Employer",
+      "token": "example",
+      "enabled": false
+    },
+    {
+      "provider": "lever",
+      "company": "Example Lever Employer",
+      "token": "example",
+      "enabled": false
+    },
+    {
+      "provider": "ashby",
+      "company": "Example Ashby Employer",
+      "token": "example",
+      "enabled": false
+    },
+    {
+      "provider": "smartrecruiters",
+      "company": "Example SmartRecruiters Employer",
+      "token": "example",
+      "enabled": false
+    },
+    {
+      "provider": "workable",
+      "company": "Example Workable Employer",
+      "token": "example",
+      "enabled": false
+    },
+    {
+      "provider": "breezy",
+      "company": "Example Breezy Employer",
+      "token": "example",
+      "enabled": false
+    },
+    {
+      "provider": "pinpoint",
+      "company": "Example Pinpoint Employer",
+      "token": "example",
+      "enabled": false
+    },
+    {
+      "provider": "personio",
+      "company": "Example Personio Employer",
+      "token": "example",
+      "domain": "de",
+      "enabled": false
+    },
+    {
+      "provider": "bamboohr",
+      "company": "Example BambooHR Employer",
+      "token": "example",
+      "enabled": false
+    },
+    {
+      "provider": "teamtailor",
+      "company": "Example Teamtailor Employer",
+      "token": "example",
+      "enabled": false
+    },
+    {
+      "provider": "workday",
+      "company": "Example Workday Employer",
+      "token": "example",
+      "host": "example.wd5.myworkdayjobs.com",
+      "site": "External",
+      "enabled": false
+    },
+    {
+      "provider": "usajobs",
+      "company": "USAJOBS",
+      "token": "federal",
+      "keyword": "information technology internship",
+      "enabled": false
+    },
+    {
+      "provider": "rss",
+      "company": "Example company jobs RSS",
+      "token": "example-rss",
+      "feed_url": "https://example.com/jobs.rss",
+      "intern_only": true,
+      "enabled": false
+    },
+    {
+      "provider": "csv_import",
+      "company": "Job-platform alert CSV",
+      "token": "alerts",
+      "path": "data/imports/job-alerts.csv",
+      "enabled": false
+    },
+    {
+      "provider": "json_import",
+      "company": "Job-platform export JSON",
+      "token": "export",
+      "path": "data/imports/job-results.json",
+      "enabled": false
+    }
+  ]
+}

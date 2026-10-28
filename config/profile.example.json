@@ -1,0 +1,68 @@
+{
+  "name": "Demo Student",
+  "email": "demo@example.org",
+  "phone": "",
+  "location": "Metro City, US",
+  "linkedin": "",
+  "github": "",
+  "education": {
+    "school": "Example State University",
+    "degree": "B.S. in Information Systems",
+    "graduation": "May 2028",
+    "gpa": ""
+  },
+  "target_roles": [
+    "cloud engineering",
+    "infrastructure engineering",
+    "devops",
+    "cybersecurity",
+    "information security",
+    "systems engineering",
+    "it intern"
+  ],
+  "preferred_locations": [
+    "Metro City",
+    "Remote"
+  ],
+  "skills": [
+    "Python",
+    "AWS",
+    "Terraform",
+    "Linux",
+    "Networking",
+    "GitHub Actions",
+    "SQL"
+  ],
+  "certifications": [],
+  "experience": [
+    {
+      "title": "IT Engineering Intern",
+      "company": "Sample Technology Co.",
+      "dates": "Summer 2026",
+      "bullets": [
+        "Automated a recurring infrastructure configuration check using Python.",
+        "Documented operational runbooks for a small Linux environment."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Infrastructure Lab",
+      "stack": [
+        "AWS",
+        "Terraform",
+        "GitHub Actions"
+      ],
+      "bullets": [
+        "Provisioned a small demonstration environment with infrastructure as code.",
+        "Added version-controlled deployment checks and setup instructions."
+      ]
+    }
+  ],
+  "eligibility": {
+    "us_work_authorization": null,
+    "needs_sponsorship": null,
+    "current_undergraduate": true
+  },
+  "review_note": "SYNTHETIC DEMO DATA ONLY: Replace every field with verified facts in ignored config/profile.json before preparing real applications."
+}

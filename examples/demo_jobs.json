@@ -1,0 +1,35 @@
+[
+  {
+    "id": "demo-cloud-101",
+    "platform": "synthetic-demo",
+    "company": "Northwind Systems (fictional)",
+    "title": "Cloud Infrastructure Intern — Summer 2027",
+    "location": "Metro City, US",
+    "work_mode": "Hybrid",
+    "job_url": "https://example.org/jobs/demo-cloud-101",
+    "description": "Summer undergraduate internship. Work with AWS, Terraform, Python, Linux, and GitHub Actions to build and maintain cloud infrastructure. Experience documenting runbooks is useful.",
+    "compensation": "$25/hour (fictional)"
+  },
+  {
+    "id": "demo-security-102",
+    "platform": "synthetic-demo",
+    "company": "Contoso Analytics (fictional)",
+    "title": "Cybersecurity Intern — Summer 2027",
+    "location": "Remote",
+    "work_mode": "Remote",
+    "job_url": "https://example.org/jobs/demo-security-102",
+    "description": "Undergraduate internship supporting vulnerability management, security reviews and Python-based automation. Familiarity with Linux and networking is beneficial.",
+    "compensation": "$22/hour (fictional)"
+  },
+  {
+    "id": "demo-misaligned-103",
+    "platform": "synthetic-demo",
+    "company": "Fabrikam Research (fictional)",
+    "title": "Senior Research Director",
+    "location": "Remote",
+    "work_mode": "Remote",
+    "job_url": "https://example.org/jobs/demo-misaligned-103",
+    "description": "Senior management role leading a doctoral-level research group. Requires a PhD.",
+    "compensation": "$200000/year (fictional)"
+  }
+]
