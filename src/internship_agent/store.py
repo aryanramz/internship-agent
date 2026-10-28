@@ -63,7 +63,7 @@ class Store:
         finally:
             conn.close()
 
-    def event(self, conn, jid: str, kind: str, payload: dict):
+    def event(self, conn, jid: str | None, kind: str, payload: dict):
         conn.execute("INSERT INTO events(job_id,event_type,payload_json,created_at) VALUES(?,?,?,?)",
                      (jid, kind, json.dumps(payload, sort_keys=True), now_iso()))
 

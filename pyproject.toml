@@ -22,7 +22,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["live: opt-in tests that contact a public ATS API (requires RUN_LIVE_ATS=1)"]
+markers = ["live: opt-in network checks requiring the provider-specific authorization flag"]
 
 [tool.coverage.run]
 source = ["internship_agent"]

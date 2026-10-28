@@ -9,6 +9,7 @@ from .service import Agent
 def main():
     p=argparse.ArgumentParser(prog="internship-agent")
     p.add_argument("--data",default=os.environ.get("INTERNSHIP_AGENT_DATA","./data"))
+    p.add_argument("--credentials-dir",default=None,help="Private Google credential directory (independent of --data)")
     cmds=p.add_subparsers(dest="command",required=True)
     a=cmds.add_parser("discover");a.add_argument("--sources",default="config/sources.json")
     a=cmds.add_parser("rank");a.add_argument("--profile",default="config/profile.json");a.add_argument("--min-score",type=int,default=0);a.add_argument("--limit",type=int,default=25)
@@ -30,7 +31,7 @@ def main():
     cmds.add_parser("providers")
     g=cmds.add_parser("google-login",help="Authorize local Google API access (separate from ChatGPT connectors)")
     g.add_argument("service",choices=["gmail","sheets"])
-    g.add_argument("--client",default="config/google-oauth-client.json")
+    g.add_argument("--client",default=None)
     ga=cmds.add_parser("ingest-alerts",help="Stage Gmail job-alert links for review; no automatic job import")
     ga.add_argument("--query",default="")
     ga.add_argument("--limit",type=int,default=30)
@@ -46,12 +47,12 @@ def main():
     sh.add_argument("--confirm",default="")
     cmds.add_parser("summary")
     args=p.parse_args()
-    agent=Agent(args.data)
+    agent=Agent(args.data,credentials_dir=args.credentials_dir)
     try:
         if args.command=="google-login":
             from .integrations.google_auth import credentials
-            credentials(args.service,str(agent.root/"secrets"),args.client,interactive=True)
-            result={"authorized":args.service,"token_file":f"{agent.root / 'secrets' / ('google_' + args.service + '_token.json')}","note":"Token is local and must not be committed."}
+            credentials(args.service,args.credentials_dir,args.client,interactive=True,legacy_dirs=agent.legacy_credential_dirs)
+            result={"authorized":args.service,"token_file":str(agent.credentials_dir / ('google_' + args.service + '_token.json')),"note":"Token is local and must not be committed."}
         elif args.command=="ingest-alerts":result=agent.ingest_alerts(args.query,args.limit)
         elif args.command=="leads":result=agent.pending_alerts(args.limit)
         elif args.command=="review-lead":

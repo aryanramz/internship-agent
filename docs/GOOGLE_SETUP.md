@@ -1,5 +1,7 @@
 # Gmail job-alert and existing Google Sheets integration
 
+For the separate synthetic tracker qualification, see [Sheets validation](SHEETS_VALIDATION.md).
+
 This uses a **separate, user-controlled Google Cloud OAuth desktop application** for the local backend. It **does not** reuse the ChatGPT Gmail/Drive connector credentials. You can continue using ChatGPT's connected Gmail and Drive in chats independently.
 
 ## Step 1 — Google Cloud setup (manual user authorization)
@@ -17,7 +19,57 @@ internship-agent google-login gmail
 internship-agent google-login sheets
 ```
 
-The Gmail grant requests only `gmail.readonly`. The Sheets grant requests the `spreadsheets` scope, which can **read and edit Sheets that your account can access**; it is broader than a single file. No app password is used. Tokens are saved privately in `data/secrets/` and excluded from source control. Do not publish this directory or the OAuth client secret. Testing-mode refresh token expiration or admin consent policies may require renewed authorization; see Google documentation.
+The Gmail grant requests only `gmail.readonly`. The Sheets grant requests the `spreadsheets` scope, which can **read and edit Sheets that your account can access**; it is broader than a single file. No app password is used. Tokens use a private per-user directory independent of the database. Do not publish tokens or the OAuth client secret. Testing-mode refresh token expiration or admin consent policies may require renewed authorization; see Google documentation.
+
+## Credential storage and compatibility
+
+| Platform | Default directory |
+|---|---|
+| Windows | `%LOCALAPPDATA%\InternshipAgent\credentials` |
+| macOS | `~/Library/Application Support/InternshipAgent/credentials` |
+| Linux | `$XDG_DATA_HOME/internship-agent/credentials`, or `~/.local/share/internship-agent/credentials` |
+
+Separate service files remain `google_gmail_token.json` and
+`google_sheets_token.json`. Changing `--data` changes the database, not the grant.
+Directory precedence is explicit `--credentials-dir`, then
+`INTERNSHIP_AGENT_GOOGLE_SECRETS`, then the OS default above. Programmatic callers
+can pass `credentials_dir` to Agent or the existing `secret_dir` to GoogleGateway.
+
+```powershell
+# Same default grant, different isolated database; preview only.
+internship-agent --data data/sheet-sync-test sync-sheet
+
+# Deliberately isolate another account in a private directory you control.
+internship-agent --credentials-dir C:\Private\InternshipAgent-Test google-login sheets --client C:\Private\desktop-client.json
+```
+
+With the default store only, if no shared service token exists, the app checks
+the active database's `secrets/` directory, then the current checkout's
+`data/secrets/`. A valid grant is saved atomically into the shared store; an
+expired refreshable grant is refreshed first. The original is never moved or
+deleted. An existing shared grant wins over legacy files. Explicit/environment
+overrides intentionally disable legacy adoption so another account is never
+selected silently. If you used multiple Google accounts, choose an explicit
+directory for each rather than relying on default adoption.
+
+The OAuth desktop client is resolved from `google-login --client`, then
+`INTERNSHIP_AGENT_GOOGLE_CLIENT`, then `google-oauth-client.json` in the credential
+directory, then the existing `config/google-oauth-client.json` for compatibility.
+An explicit path does not silently fall back. Existing client files need not be
+moved or downloaded again.
+
+Token writes use a unique private temporary file and atomic replacement; failed
+refresh/storage operations preserve the previous file. New POSIX directories and
+files use 0700/0600. Windows relies on the default user-profile ACL inherited by
+the LocalAppData directory; keep override directories private. Files contain
+plain OAuth JSON, not vault encryption. A failed cleanup may leave a private
+`.tmp` file; it is ignored and rejected by repository hygiene checks. Revoke
+unneeded grants through Google rather than deleting authorization blindly.
+
+The app never prints token content, raw refresh responses, or API error payloads.
+It does not read credentials from ChatGPT connectors. If a token is invalid or
+revoked, a readable message explains how to sign in locally; private credentials
+must never be uploaded for troubleshooting.
 
 ## Step 2 — Pull permitted job-alert emails into a review queue
 
@@ -53,7 +105,7 @@ internship-agent sync-sheet
 internship-agent sync-sheet --apply --confirm "SYNC APPLICATIONS"
 ```
 
-The sync expects `Applications!A4:S4` to match the original 19 headers. It never alters `Dashboard` or `Lists` and never modifies historical rows that lack an `Agent ID: <id>` marker in `Notes` (column S). It appends only **prepared or later** applications, not every newly discovered job. For agent-owned rows it only advances known statuses or fills blank submission dates and document names. Manual or unknown statuses are not replaced. It will not delete rows, rewrite notes or overwrite a manually edited resume name.
+The sync expects `Applications!A4:S4` to exactly match the original 19 headers. It never alters `Dashboard` or `Lists` and never modifies historical rows that lack an `Agent ID: <id>` marker in `Notes` (column S). It appends only **prepared or later** applications, not every newly discovered job. For agent-owned rows it advances known statuses or fills blank submission dates and document names. Manual/unknown statuses and differing terminal outcomes are not replaced. It will not delete rows, rewrite notes or overwrite a manually edited resume name. Exact proposed rows/cells are included in preview; keep that output local.
 
 This sync is deliberately not fully transactional across multiple requests: if Google returns a timeout after a write, run the preview again. Agent ID markers make append retries idempotent under ordinary conditions. Avoid simultaneous manual and automated editing, and keep a versioned backup of the Sheet.
 
