@@ -8,13 +8,14 @@ from .store import Store
 from .models import validate_board
 
 class Agent:
-    def __init__(self, root: str, *, credentials_dir: str | None = None):
+    def __init__(self, root: str, *, credentials_dir: str | None = None, read_only: bool = False):
         from .integrations.google_auth import credential_directory
         self._credentials_override=credentials_dir
         self.credentials_dir=credential_directory(credentials_dir)
         self.root=Path(root).resolve()
-        self.root.mkdir(parents=True,exist_ok=True)
-        self.store=Store(str(self.root/"agent.db"))
+        if not read_only:
+            self.root.mkdir(parents=True,exist_ok=True)
+        self.store=Store(str(self.root/"agent.db"),read_only=read_only)
         self.legacy_credential_dirs=(self.root/"secrets",Path("data/secrets").resolve())
 
     def load_profile(self, profile_path: str) -> dict:

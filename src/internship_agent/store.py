@@ -42,15 +42,24 @@ STATUSES = ("discovered", "shortlisted", "prepared", "approved", "submitted", "a
 
 
 class Store:
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str, *, read_only: bool = False):
         self.path = Path(db_path)
+        self.read_only=read_only
+        if read_only:
+            if not self.path.is_file():
+                raise FileNotFoundError("Read-only access requires an existing application database")
+            return
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connection() as c:
             c.executescript(SCHEMA)
 
     @contextmanager
     def connection(self):
-        conn = sqlite3.connect(self.path)
+        if self.read_only:
+            conn=sqlite3.connect(self.path.resolve().as_uri()+"?mode=ro",uri=True)
+            conn.execute("PRAGMA query_only=ON")
+        else:
+            conn = sqlite3.connect(self.path)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys=ON")
         conn.execute("PRAGMA busy_timeout=3000")

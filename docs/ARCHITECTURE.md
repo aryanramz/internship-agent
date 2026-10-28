@@ -2,7 +2,7 @@
 
 ## Components
 
-The system is local-first: `Store` persists normalized `Job` objects and one application state per job in SQLite. `Agent` orchestrates ingestion, ranking, document preparation and optional Google integrations. The CLI exposes commands without requiring an LLM. `mcp_server.py` offers an optional MCP tool adapter to compatible clients.
+The system is local-first: `Store` persists normalized `Job` objects and one application state per job in SQLite. `Agent` orchestrates ingestion, ranking, document preparation and optional Google integrations. The CLI exposes commands without requiring an LLM. `mcp_server.py` offers only read-only summary, ranking and preview tools over stdio, opening an existing Store in SQLite read-only mode.
 
 ```mermaid
 flowchart LR
@@ -16,7 +16,7 @@ flowchart LR
     External --> Evidence[Operator-provided confirmation evidence]
     Evidence --> Store
     Store --> Sheets[Optional Google Sheets preview / confirmed sync]
-    MCP[Optional MCP client tools] --> Store
+    MCP[Optional local MCP tools] -->|Read only| Store
 ```
 
 ## Data ownership and confidence
@@ -38,7 +38,8 @@ The `events` table keeps transition records. State transitions are guarded by th
 - Public ATS discovery uses fixed provider URLs, HTTPS, bounded reads and no redirect-following; RSS requires explicit trusted user configuration. Greenhouse has a credential-free live ingestion check and synthetic HTTP replay coverage; see [live ATS validation](LIVE_ATS_VALIDATION.md). Other readers remain live-unverified.
 - Local Gmail API permission is read-only; extracted job-alert leads must be reviewed before import. Local Google Sheets permissions allow writes, but `sync-sheet` defaults to preview and applies changes only after exact confirmation.
 - Google grants use a per-user credential directory independent of the SQLite data root. Default legacy-token adoption preserves the original; explicit directory overrides isolate accounts. Sheets errors are translated locally without raw API/OAuth payloads; audit events retain counts and failure stage only. See [credential storage](GOOGLE_SETUP.md#credential-storage-and-compatibility).
-- A ChatGPT connector does **not** grant Python code access to its OAuth credentials or expose your local CLI to a cloud agent. Direct MCP use requires compatible client access and a securely authenticated transport. Current MCP server code is not production-ready and should not be publicly exposed.
+- A ChatGPT connector does **not** grant Python code access to its OAuth credentials or expose your local CLI to a cloud agent. Direct cloud MCP use requires compatible client access and a securely authenticated transport. The local module has no HTTP startup path. A [zero-cost transport/OAuth architecture](MCP_CONNECTION_OPTIONS.md) is proposed; implementation and public reachability require separate approval.
+- The MCP factory is import-safe and never initializes a database. Read-only annotations describe its tools; SQLite `mode=ro` and absence of write/Google/file tools enforce the initial data boundary. Expected failures are sanitized. Requested ranking/preview data reaches the client; full profiles, credentials and documents are not file resources.
 - Any browser-based submission or recruiter email action must be separately implemented and authorized; neither is currently included.
 
 ## Why the design is split
