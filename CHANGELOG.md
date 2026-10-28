@@ -4,6 +4,7 @@ The project follows pre-1.0 semantic versioning. Earlier releases are preserved 
 
 ## Unreleased
 
+- Added exact Sheets insert/update previews, metadata-only local sync audit events and a separately confirmed synthetic tracker qualification runner; live OAuth validation remains pending.
 - Validated credential-free Greenhouse ingestion and repeat-run deduplication against a public board.
 - Fixed entity-encoded Greenhouse descriptions and publication dates; skip explicit passed deadlines and reject malformed snapshots before ingestion.
 - Added structured discovery errors for unavailable resources, blocked redirects, rate limits, transport and payload failures.

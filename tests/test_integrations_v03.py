@@ -1,4 +1,5 @@
 import base64
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -57,6 +58,68 @@ def make_agent(tmp, state="prepared"):
     return agent,jd.id
 
 class BridgeTests(unittest.TestCase):
+    def test_preview_reports_every_exact_insert_and_cell_update(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            agent,jid=make_agent(tmp,"submitted")
+            row=[1,"Manual company"]+[""]*17
+            sheet=FakeSheet([["title"],["note"],[],COLUMNS,row])
+            result=sync_sheet(agent.store,sheet,"EXAMPLE_SPREADSHEET_ID_12345678901234567890123")
+            self.assertEqual(len(result["append_rows"]),1)
+            self.assertEqual(len(result["append_rows"][0]),19)
+            self.assertEqual(result["append_rows"][0][0],2)
+            self.assertEqual(result["append_rows"][0][1:3],["Acme","Cloud Security Intern"])
+            self.assertEqual(result["updates"],[])
+            self.assertFalse(sheet.appended)
+            owned=result["append_rows"][0]
+            owned[10]="Not Applied"
+            owned[8]=""
+            sheet.rows.append(owned)
+            preview=sync_sheet(agent.store,sheet,"EXAMPLE_SPREADSHEET_ID_12345678901234567890123")
+            self.assertIn({"range":"'Applications'!K6","values":[["Applied"]]},preview["updates"])
+            self.assertEqual(preview["append_rows"],[])
+            self.assertFalse(sheet.updated)
+
+    def test_sync_audit_contains_metadata_without_sheet_values_or_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            agent,jid=make_agent(tmp)
+            sheet=FakeSheet([["title"],["note"],[],COLUMNS])
+            sid="EXAMPLE_SPREADSHEET_ID_12345678901234567890123"
+            sync_sheet(agent.store,sheet,sid)
+            sync_sheet(agent.store,sheet,sid,True,"SYNC APPLICATIONS")
+            with agent.store.connection() as connection:
+                events=connection.execute("SELECT payload_json FROM events WHERE event_type='sheet_sync' ORDER BY id").fetchall()
+            values=[json.loads(e[0]) for e in events]
+            self.assertEqual([e["phase"] for e in values],["started","preview","started","planned","completed"])
+            self.assertEqual(values[-1]["append_count"],1)
+            self.assertEqual(values[-1]["update_count"],0)
+            self.assertEqual(values[-1]["sheet_ref"],values[1]["sheet_ref"])
+            self.assertNotEqual(values[0]["sync_id"],values[2]["sync_id"])
+            rendered=json.dumps(values)
+            for private_value in (sid,"Acme","Cloud Security Intern","resume.docx",jid):
+                self.assertNotIn(private_value,rendered)
+
+    def test_ambiguous_append_is_audited_and_preview_prevents_duplicate_retry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            agent,jid=make_agent(tmp)
+            class AmbiguousSheet(FakeSheet):
+                def append_rows(self,sid,rng,items):
+                    super().append_rows(sid,rng,items)
+                    raise TimeoutError("untrusted remote diagnostics")
+            sheet=AmbiguousSheet([["title"],["note"],[],COLUMNS])
+            sid="EXAMPLE_SPREADSHEET_ID_12345678901234567890123"
+            with self.assertRaises(TimeoutError):
+                sync_sheet(agent.store,sheet,sid,True,"SYNC APPLICATIONS")
+            with agent.store.connection() as connection:
+                event=json.loads(connection.execute("SELECT payload_json FROM events WHERE event_type='sheet_sync' ORDER BY id DESC LIMIT 1").fetchone()[0])
+            self.assertEqual(event["phase"],"failed")
+            self.assertEqual(event["stage"],"append")
+            self.assertEqual(event["write_outcome"],"unknown")
+            self.assertNotIn("untrusted",json.dumps(event))
+            preview=sync_sheet(agent.store,sheet,sid)
+            self.assertEqual((preview["append_count"],preview["update_count"]),(0,0))
+            self.assertEqual(len(sheet.appended),1)
+            self.assertEqual(agent.store.get_job(jid)["status"],"prepared")
+
     def test_extract_links_no_redirects_no_duplicates(self):
         items=extract_leads(msg_html())
         self.assertEqual(len(items),1)

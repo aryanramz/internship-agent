@@ -89,6 +89,8 @@ python -m compileall -q src
 
 GitHub Actions runs tests across supported Python versions and checks for common accidental private-file commits. The file-checker is not a substitute for full secret scanning or security review.
 
+The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) provides a plan-only command and a separately confirmed synthetic tracker check. Its live OAuth qualification is still pending.
+
 ## Roadmap
 
 - **v0.4 (current):** public repo hygiene, synthetic offline demonstration, CI, documented tradeoffs and release artifacts.

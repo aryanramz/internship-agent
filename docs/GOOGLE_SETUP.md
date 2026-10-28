@@ -1,5 +1,7 @@
 # Gmail job-alert and existing Google Sheets integration
 
+For the separate synthetic tracker qualification, see [Sheets validation](SHEETS_VALIDATION.md).
+
 This uses a **separate, user-controlled Google Cloud OAuth desktop application** for the local backend. It **does not** reuse the ChatGPT Gmail/Drive connector credentials. You can continue using ChatGPT's connected Gmail and Drive in chats independently.
 
 ## Step 1 — Google Cloud setup (manual user authorization)

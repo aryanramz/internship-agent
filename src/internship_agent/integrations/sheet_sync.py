@@ -5,7 +5,9 @@ managed by the agent are identified by an explicit Agent ID in column S.
 """
 from __future__ import annotations
 from pathlib import Path
+import hashlib
 import re
+import uuid
 from ..tracker import COLUMNS, STATUS_MAP, _track
 
 HEADER_ROW = 4
@@ -94,22 +96,58 @@ def sync_sheet(store, gateway, spreadsheet_id: str, apply: bool = False,
                confirmation: str = "") -> dict:
     if not re.fullmatch(r"[a-zA-Z0-9_-]{25,100}", spreadsheet_id):
         raise ValueError("Invalid Google Sheet ID")
-    values=gateway.get_values(spreadsheet_id,SHEET_READ_RANGE)
-    plan=plan_sync(store,values)
-    if not apply:
-        return {k:v for k,v in plan.items() if not k.startswith("_")} | {"mode":"preview", "did_write":False}
-    if confirmation != "SYNC APPLICATIONS":
-        raise ValueError("Applying sync requires exact confirmation: SYNC APPLICATIONS")
-    # Re-read just before writing and require stable rows; don't overwrite concurrent manual edits.
-    if gateway.get_values(spreadsheet_id,SHEET_READ_RANGE) != values:
-        raise ValueError("Sheet changed during sync planning. Retry; no changes made.")
-    writes=0
-    # Existing entries updated first. A retry after an ambiguous network failure is idempotent
-    # because new entries are found by their Agent IDs upon re-read.
-    if plan["_updates"]:
-        gateway.update_cells(spreadsheet_id, plan["_updates"])
-        writes+=len(plan["_updates"])
-    if plan["_append_rows"]:
-        gateway.append_rows(spreadsheet_id,SHEET_APPEND_RANGE,plan["_append_rows"])
-        writes+=len(plan["_append_rows"])
-    return {k:v for k,v in plan.items() if not k.startswith("_")} | {"mode":"applied", "did_write":bool(writes), "write_ops":writes}
+    sync_id=uuid.uuid4().hex
+    sheet_ref=hashlib.sha256(spreadsheet_id.encode()).hexdigest()[:16]
+    mode="applied" if apply else "preview"
+    plan=None
+    stage="read"
+    write_attempted=False
+
+    def audit(phase, **details):
+        # Counts and a pseudonymous target only; no cells, URLs, filenames or tokens.
+        payload={"sync_id":sync_id,"sheet_ref":sheet_ref,"mode":mode,"phase":phase,**details}
+        if plan is not None:
+            payload.update(append_count=plan["append_count"],update_count=plan["update_count"])
+        with store.connection() as connection:
+            store.event(connection,None,"sheet_sync",payload)
+
+    audit("started")  # If local audit storage fails, do not contact Google.
+    try:
+        values=gateway.get_values(spreadsheet_id,SHEET_READ_RANGE)
+        stage="plan"
+        plan=plan_sync(store,values)
+        public={k:v for k,v in plan.items() if not k.startswith("_")} | {
+            "append_rows":plan["_append_rows"],"updates":plan["_updates"],
+            "sync_id":sync_id,"sheet_ref":sheet_ref}
+        if not apply:
+            audit("preview")
+            return public | {"mode":"preview", "did_write":False}
+        stage="confirm"
+        if confirmation != "SYNC APPLICATIONS":
+            raise ValueError("Applying sync requires exact confirmation: SYNC APPLICATIONS")
+        audit("planned")
+        stage="recheck"
+        # Re-read just before writing; do not overwrite concurrent manual edits.
+        if gateway.get_values(spreadsheet_id,SHEET_READ_RANGE) != values:
+            raise ValueError("Sheet changed during sync planning. Retry; no changes made.")
+        writes=0
+        if plan["_updates"]:
+            stage="update"
+            write_attempted=True
+            gateway.update_cells(spreadsheet_id, plan["_updates"])
+            writes+=len(plan["_updates"])
+        if plan["_append_rows"]:
+            stage="append"
+            write_attempted=True
+            gateway.append_rows(spreadsheet_id,SHEET_APPEND_RANGE,plan["_append_rows"])
+            writes+=len(plan["_append_rows"])
+        stage="complete"
+        audit("completed",write_ops=writes)
+        return public | {"mode":"applied", "did_write":bool(writes), "write_ops":writes}
+    except Exception as exc:
+        try:
+            audit("failed",stage=stage,error_type=type(exc).__name__,
+                  write_outcome="unknown" if write_attempted else "not_attempted")
+        except Exception:
+            exc.add_note("Could not persist sync failure audit; inspect the remote sheet before retrying.")
+        raise
