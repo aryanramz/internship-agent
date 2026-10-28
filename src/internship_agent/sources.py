@@ -6,10 +6,13 @@ are explicitly user-configured; platform alert emails can be normalized via CSV.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.request import Request, build_opener, HTTPRedirectHandler
 from urllib.parse import quote, urlsplit
+from urllib.error import HTTPError, URLError
 from xml.etree import ElementTree as ET
 import csv
 import json
@@ -25,6 +28,24 @@ AGGREGATORS = {"remotive", "jobicy", "simplify_github", "usajobs"}
 LOCAL_IMPORTS = {"csv_import", "json_import"}
 SUPPORTED = PUBLIC_BOARDS | AGGREGATORS | LOCAL_IMPORTS | {"rss"}
 INTERNSHIP_TITLE = re.compile(r"\b(intern(ship)?|co[ -]?op|apprentice|summer analyst|summer associate)\b", re.I)
+
+
+class SourceError(ValueError):
+    """Safe, machine-readable discovery failure; never includes response content."""
+    def __init__(self, code: str, message: str, *, http_status: int | None = None, retry_after: str = ""):
+        super().__init__(message)
+        self.code = code
+        self.http_status = http_status
+        self.retry_after = retry_after
+
+
+def _retry_after(value: str) -> str:
+    if re.fullmatch(r"[0-9]{1,10}", value):
+        return value
+    try:
+        return parsedate_to_datetime(value).isoformat()
+    except (TypeError, ValueError, OverflowError):
+        return ""
 
 
 class _Text(HTMLParser):
@@ -89,10 +110,28 @@ def get_bytes(url: str, headers: dict | None = None, post_json: dict | None = No
         req_headers["Content-Type"] = "application/json"
     req = Request(url, data=data, headers=req_headers)
     opener = build_opener(_NoRedirect())
-    with opener.open(req, timeout=20) as response:
-        body = response.read(MAX_BYTES + 1)
+    try:
+        with opener.open(req, timeout=20) as response:
+            body = response.read(MAX_BYTES + 1)
+    except HTTPError as exc:
+        status = exc.code
+        retry_after = _retry_after(exc.headers.get("Retry-After", "")) if exc.headers else ""
+        exc.close()
+        if 300 <= status < 400:
+            code, message = "redirect_blocked", "Source redirect refused; verify the configured public board"
+        elif status == 404:
+            code, message = "not_found", "Board or posting not found (HTTP 404); verify the board token or posting"
+        elif status == 410:
+            code, message = "gone", "Board or posting no longer available (HTTP 410)"
+        elif status == 429:
+            code, message = "rate_limited", "Source rate limited (HTTP 429); wait for Retry-After before another run"
+        else:
+            code, message = "http_error", f"Source request failed (HTTP {status})"
+        raise SourceError(code, message, http_status=status, retry_after=retry_after) from None
+    except (URLError, OSError):
+        raise SourceError("network_error", "Source connection failed or timed out; no automatic retry") from None
     if len(body) > MAX_BYTES:
-        raise ValueError("Source response exceeds 16MB limit")
+        raise SourceError("response_too_large", "Source response exceeds 16MB limit")
     return body
 
 
@@ -143,14 +182,52 @@ def _place(place: object) -> str:
     return text(place)
 
 
+def _greenhouse_jobs(board: dict, payload: object) -> list[Job]:
+    if not isinstance(payload, dict) or not isinstance(payload.get("jobs"), list):
+        raise SourceError("invalid_payload", "Greenhouse response requires a jobs array")
+    jobs = []
+    now = datetime.now(timezone.utc)
+    for item in payload["jobs"]:
+        if not isinstance(item, dict):
+            raise SourceError("invalid_payload", "Greenhouse jobs array contains a non-object")
+        sid = item.get("id")
+        title, url = item.get("title"), item.get("absolute_url")
+        content = item.get("content")
+        published = item.get("first_published")
+        if (isinstance(sid, bool) or not isinstance(sid, (str, int))
+                or not re.fullmatch(r"[0-9]+", str(sid)) or int(sid) <= 0
+                or not isinstance(title, str) or not strip_html(title)
+                or not isinstance(url, str)
+                or (content is not None and not isinstance(content, str))
+                or (published is not None and not isinstance(published, str))):
+            raise SourceError("invalid_posting", "Greenhouse posting has invalid ID, title, URL or content fields")
+        try:
+            _validate_feed_url(url)
+        except ValueError:
+            raise SourceError("invalid_posting", "Greenhouse posting requires a public HTTPS URL without credentials") from None
+        deadline = item.get("application_deadline")
+        if deadline is not None:
+            try:
+                expires = datetime.fromisoformat(deadline.replace("Z", "+00:00"))
+                if expires.tzinfo is None:
+                    raise ValueError("Missing timezone")
+            except (AttributeError, TypeError, ValueError):
+                raise SourceError("invalid_posting", "Greenhouse posting has an invalid application deadline") from None
+            if expires <= now:
+                continue
+        job = make_job(board, sid, title, url, location=_place(item.get("location")),
+                       description=unescape(content or ""), published=published)
+        if job:
+            jobs.append(job)
+    return jobs
+
+
 def normalize(board: dict, payload: object) -> list[Job]:
     board = validate_board(board)
     provider, token = board["provider"], board["token"]
     jobs: list[Job] = []
     if provider == "greenhouse":
-        for i in _items(payload, "jobs"):
-            j = make_job(board, i.get("id"), i.get("title"), i.get("absolute_url"), location=_place(i.get("location")), description=i.get("content"))
-            if j: jobs.append(j)
+        jobs = _greenhouse_jobs(board, payload)
     elif provider == "lever":
         for i in _items(payload, "jobs"):
             desc = i.get("descriptionPlain") or i.get("description") or ""
@@ -419,7 +496,10 @@ def _source_payload(board: dict, config_root: str) -> tuple[object, bytes | None
 
 def retrieve_board(board: dict, config_root: str = ".") -> list[Job]:
     board = validate_board(board)
-    payload, xml = _source_payload(board, config_root)
+    try:
+        payload, xml = _source_payload(board, config_root)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise SourceError("invalid_payload", "Source response is not valid JSON") from None
     provider = board["provider"]
     if xml is not None:
         return normalize_xml(board, xml)

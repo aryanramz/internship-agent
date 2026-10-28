@@ -6,7 +6,7 @@
 
 | Type | Reader | Inputs | Current limitations |
 |---|---|---|---|
-| Company ATS | Greenhouse | Company board slug | Public jobs; some legacy Greenhouse boards differ |
+| Company ATS | Greenhouse | Company board slug | [Live validated](LIVE_ATS_VALIDATION.md) on one public board; other/legacy boards may differ |
 | Company ATS | Lever | Company slug | Public JSON postings |
 | Company ATS | Ashby | Company slug | Public job-board endpoint |
 | Company ATS | SmartRecruiters | Company identifier | Public Posting API; first 500 posts; list details may be sparse |

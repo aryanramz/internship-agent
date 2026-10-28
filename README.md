@@ -4,7 +4,7 @@
 
 Internship Agent is an open-source Python project that combines employer job-board readers, an explainable matching engine, a SQLite application ledger, optional Google Workspace integrations, and an MCP tool interface. It's intended for students who want a disciplined, inspectable internship pipeline rather than a bulk-apply bot.
 
-**Project status: v0.4.0 — working local prototype, not production-ready.** Most automated tests are offline/mocked. The MCP/Google connections and provider endpoint behavior need live validation. There is **no automatic job application submission or recruiter emailing**.
+**Project status: v0.4.0 — working local prototype, not production-ready.** Most automated tests are offline/mocked. Greenhouse discovery has [live validation and an opt-in integration check](docs/LIVE_ATS_VALIDATION.md); other provider endpoints and MCP/Google connections still need live validation. There is **no automatic job application submission or recruiter emailing**.
 
 ## Features
 
@@ -92,7 +92,7 @@ GitHub Actions runs tests across supported Python versions and checks for common
 ## Roadmap
 
 - **v0.4 (current):** public repo hygiene, synthetic offline demonstration, CI, documented tradeoffs and release artifacts.
-- **v0.5:** authenticated end-to-end verification of at least one real ATS feed and Google sync using a test sheet; integration tests with sanitized recordings.
+- **v0.5:** Greenhouse public discovery validated with sanitized integration fixtures; authorized Google sync verification using a test sheet remains pending.
 - **v0.6:** human-reviewed tailoring improvements, robust parsing/format QA and validation of MCP client connectivity.
 - **Future:** approved, platform-compliant application assistance; recruiter outreach drafts and confirmation monitoring.
 
