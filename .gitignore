@@ -24,7 +24,10 @@ config/google-oauth-client.json
 *.sqlite*
 *.log
 **/secrets/
+**/credentials/
 **/*token.json
+**/google_*_token*.tmp
+**/client_secret*.json
 **/*credentials*.json
 *.pem
 *.key

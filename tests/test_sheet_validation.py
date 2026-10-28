@@ -10,6 +10,8 @@ import pytest
 from internship_agent.integrations.google_auth import GoogleGateway
 from internship_agent.integrations.sheet_sync import SHEET_READ_RANGE, SHEET_APPEND_RANGE
 from internship_agent.store import Store
+from internship_agent.integrations.sheet_sync import plan_sync, sync_sheet
+from internship_agent.tracker import COLUMNS
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +28,8 @@ class MemorySheet:
         assert sid == SID
         tab=rng.split("!")[0].strip("'")
         rows=[list(row) for row in self.tabs[tab]]
+        if rng == "'Applications'!A1:S5000":
+            rows=rows[:5000]
         for row in rows:
             while row and row[-1] == "":
                 row.pop()
@@ -111,3 +115,107 @@ def test_google_gateway_uses_raw_writes_and_fixed_read_rendering():
         ("append",{"spreadsheetId":SID,"range":SHEET_APPEND_RANGE,"valueInputOption":"RAW",
                    "insertDataOption":"INSERT_ROWS","body":{"majorDimension":"ROWS","values":[["=synthetic literal"]]}}),
     ]
+
+
+@pytest.fixture
+def reconciliation(tmp_path):
+    from scripts.validate_google_sheets import _seed_store
+    store=Store(str(tmp_path/"synthetic.db"))
+    new_id,owned_id=_seed_store(store)
+    manual=[1,"Historic Employer (fictional)","Manual role"]+[""]*16
+    manual[10]="Interview"
+    manual[18]="Human notes without an ownership marker"
+    owned=[2,"Example Employer (fictional)"]+[""]*17
+    owned[10]="Applied"
+    owned[8]=store.get_job(owned_id)["submitted_at"][:10]
+    owned[12:14]=["synthetic-resume.docx","synthetic-letter.docx"]
+    owned[18]=f"Agent ID: {owned_id}; Source: synthetic"
+    sheet=MemorySheet()
+    sheet.tabs["Applications"]=[["Synthetic tracker"],[],[],list(COLUMNS),manual,owned]
+    return store,sheet,new_id,owned_id
+
+
+@pytest.mark.parametrize("header",[COLUMNS[:-1],COLUMNS+["Unexpected"],
+    [COLUMNS[1],COLUMNS[0],*COLUMNS[2:]],[" App #",*COLUMNS[1:]],None])
+def test_header_schema_requires_exact_19_columns(reconciliation,header):
+    store,sheet,_,_=reconciliation
+    sheet.tabs["Applications"][3]=header
+    with pytest.raises(ValueError,match="headers"):
+        plan_sync(store,sheet.tabs["Applications"])
+
+
+def test_duplicate_agent_ids_abort_without_any_writes(reconciliation):
+    store,sheet,_,_=reconciliation
+    sheet.tabs["Applications"].append(list(sheet.tabs["Applications"][5]))
+    before=[list(row) for row in sheet.tabs["Applications"]]
+    with pytest.raises(ValueError,match="Duplicate Agent IDs"):
+        sync_sheet(store,sheet,SID,True,"SYNC APPLICATIONS")
+    assert sheet.tabs["Applications"] == before
+
+
+@pytest.mark.parametrize("actual,desired,updates",[("Applied","interview",True),
+    ("Interview","submitted",False),("Offer","interview",False),
+    ("Rejected","offer",False),("Withdrawn","interview",False),
+    ("Interview","rejected",True),("Interview","withdrawn",True)])
+def test_status_progression_protects_terminal_outcomes(reconciliation,actual,desired,updates):
+    store,sheet,_,owned_id=reconciliation
+    sheet.tabs["Applications"][5][10]=actual
+    if desired != "submitted":
+        store.update_status(owned_id,desired,"Synthetic transition")
+    plan=plan_sync(store,sheet.tabs["Applications"])
+    assert bool(plan["_updates"]) is updates
+    if updates:
+        assert plan["_updates"] == [{"range":"'Applications'!K6","values":[[desired.title()]]}]
+
+
+@pytest.mark.parametrize("append_committed",[False,True])
+def test_partial_write_recovery_replans_committed_updates_and_uncertain_append(reconciliation,append_committed):
+    store,sheet,_,owned_id=reconciliation
+    store.update_status(owned_id,"interview","Synthetic transition")
+    manual=list(sheet.tabs["Applications"][4])
+    original_append=sheet.append_rows
+    def fail_append(sid,rng,rows):
+        if append_committed:
+            original_append(sid,rng,rows)
+        raise TimeoutError("Synthetic ambiguous write")
+    sheet.append_rows=fail_append
+    with pytest.raises(TimeoutError):
+        sync_sheet(store,sheet,SID,True,"SYNC APPLICATIONS")
+    assert sheet.tabs["Applications"][5][10] == "Interview"
+    assert sheet.tabs["Applications"][4] == manual
+    plan=sync_sheet(store,sheet,SID)
+    assert plan["update_count"] == 0
+    assert plan["append_count"] == (0 if append_committed else 1)
+    sheet.append_rows=original_append
+    sync_sheet(store,sheet,SID,True,"SYNC APPLICATIONS")
+    assert len(sheet.tabs["Applications"]) == 7
+    assert sync_sheet(store,sheet,SID)["append_count"] == 0
+
+
+def test_confirmation_precedes_all_remote_writes(reconciliation):
+    store,sheet,_,_=reconciliation
+    def forbidden(*args): raise AssertionError("Unconfirmed remote write")
+    sheet.update_cells=forbidden
+    sheet.append_rows=forbidden
+    with pytest.raises(ValueError,match="confirmation"):
+        sync_sheet(store,sheet,SID,True,"WRONG")
+
+
+def test_full_read_window_refuses_incomplete_deduplication(reconciliation):
+    store,sheet,_,_=reconciliation
+    sheet.tabs["Applications"].extend([[] for _ in range(5000-len(sheet.tabs["Applications"]))])
+    sheet.tabs["Applications"][-1]=[5000,"Synthetic last row"]
+    with pytest.raises(ValueError,match="read window"):
+        sync_sheet(store,sheet,SID,True,"SYNC APPLICATIONS")
+
+
+def test_sparse_postings_beyond_old_window_cannot_be_appended_again(reconciliation):
+    store,sheet,new_id,_=reconciliation
+    sheet.tabs["Applications"].extend([[] for _ in range(6000-len(sheet.tabs["Applications"]))])
+    distant=[3,"Synthetic distant managed row"]+[""]*17
+    distant[18]=f"Agent ID: {new_id}; Source: synthetic"
+    sheet.tabs["Applications"][-1]=distant
+    # Google trims blank rows at the end of a bounded range. A blank row 5000
+    # must not be mistaken for proof that no managed rows exist after it.
+    with pytest.raises(ValueError,match="read window"):
+        sync_sheet(store,sheet,SID,True,"SYNC APPLICATIONS")

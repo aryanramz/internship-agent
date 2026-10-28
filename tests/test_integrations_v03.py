@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from internship_agent.integrations.gmail_alerts import extract_leads,ingest_gmail
-from internship_agent.integrations.sheet_sync import plan_sync,sync_sheet
+from internship_agent.integrations.sheet_sync import plan_sync,sync_sheet,SHEET_READ_RANGE
 from internship_agent.tracker import COLUMNS
 from internship_agent.store import Store
 from internship_agent.models import Job,stable_id
@@ -28,7 +28,7 @@ class FakeGmail:
 class FakeSheet:
     def __init__(self,rows):self.rows=[list(r) for r in rows];self.updated=[];self.appended=[];self.mutate=False
     def get_values(self,sid,rng):
-        assert rng=="'Applications'!A1:S5000"
+        assert rng==SHEET_READ_RANGE
         if self.mutate:
             self.rows[4][10]="Interview"
         return [list(r) for r in self.rows]

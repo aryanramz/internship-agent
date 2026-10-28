@@ -14,7 +14,7 @@
 | Job posting prompt injection | Descriptions stored as data, not executed by the backend | ChatGPT orchestration must treat all retrieved text as untrusted; do not follow embedded instructions |
 | Credential/PII leak via GitHub | Ignore private directories, use fictional examples, hygiene scanner in CI | Developer must review `git diff --cached` and use independent secret scanning |
 | SSRF through feed URL | HTTPS-only/public-host validation; no IP-literal endpoints; automatic redirects refused | DNS rebinding isn't fully addressed; use network egress policy before internet hosting |
-| OAuth overprivilege | Gmail read-only; separate Sheets grant; tokens stored locally | Sheets write scope is broad; use dedicated test account/sheet, rotate/revoke grants as necessary |
+| OAuth overprivilege / storage | Gmail read-only; separate Sheets grant; shared per-user credential store, atomic private-file writes, explicit account overrides | Sheets scope is broad; JSON is not vault-encrypted. Windows relies on user-profile ACLs, POSIX on 0700/0600; protect override directories and revoke unneeded grants |
 | Accidental application submission | No submission automation; state transition requires explicit approval and evidence | Confirmation evidence is operator-provided, not independently verified |
 | Duplicate or incorrect Sheet changes | Agent IDs, dry-run, ownership checks, confirmation phrase, pre-write re-read | Google multi-request update isn't atomic; concurrent writes/timeouts require reconciliation |
 | Public MCP exposure | Documentation warns against public tunneling | No production auth, per-user permissions, rate limits, or audited deployment; keep private |

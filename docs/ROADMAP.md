@@ -8,7 +8,7 @@ Status definitions: **implemented** = local code/test coverage exists; **validat
 | v0.2 | Extended source registry, imports, source suggestion | Implemented | Normalization tests, no blocked-platform scrapers |
 | v0.3 | Gmail lead staging, safe Sheets reconciliation | Implemented / unvalidated live | Mock conflict tests pass; OAuth needs real-user consent |
 | v0.4 | GitHub-ready release, fictional demo, CI and security docs | Implemented | Demo runs offline; tests and hygiene checks pass |
-| v0.5 | Live approved ATS retrieval and test-sheet sync | Greenhouse validated; Google live sync pending | [Public ATS validation](LIVE_ATS_VALIDATION.md) with sanitized schema fixtures; zero unintended writes |
+| v0.5 | Live approved ATS retrieval and test-sheet sync | Greenhouse validated; basic synthetic Sheets sync operator-validated | [ATS validation](LIVE_ATS_VALIDATION.md) and [Sheets evidence/limits](SHEETS_VALIDATION.md); broader Google scenarios and new credential routing need local follow-up |
 | v0.6 | Resume tailoring QA + MCP client integration | Planned | DOCX parsing and page count, supported MCP handshake/auth tested |
 | Future | Assisted permitted browser submission | Planned | Site-specific approved workflow, human consent, evidence capture |
 | Future | Recruiter drafting and reply monitoring | Planned | Verified contact identity; drafts before sending |

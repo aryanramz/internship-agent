@@ -8,10 +8,14 @@ from .store import Store
 from .models import validate_board
 
 class Agent:
-    def __init__(self, root: str):
+    def __init__(self, root: str, *, credentials_dir: str | None = None):
+        from .integrations.google_auth import credential_directory
+        self._credentials_override=credentials_dir
+        self.credentials_dir=credential_directory(credentials_dir)
         self.root=Path(root).resolve()
         self.root.mkdir(parents=True,exist_ok=True)
         self.store=Store(str(self.root/"agent.db"))
+        self.legacy_credential_dirs=(self.root/"secrets",Path("data/secrets").resolve())
 
     def load_profile(self, profile_path: str) -> dict:
         with open(profile_path, encoding="utf-8") as f:
@@ -122,7 +126,7 @@ class Agent:
     def ingest_alerts(self, query: str = "", limit: int = 30) -> dict:
         from .integrations.google_auth import GoogleGateway
         from .integrations.gmail_alerts import DEFAULT_QUERY, ingest_gmail
-        gateway = GoogleGateway("gmail", str(self.root / "secrets"))
+        gateway = GoogleGateway("gmail",self._credentials_override,legacy_dirs=self.legacy_credential_dirs)
         return ingest_gmail(self.store, gateway, query or DEFAULT_QUERY, limit)
 
     def pending_alerts(self, limit: int = 50) -> list[dict]:
@@ -161,5 +165,5 @@ class Agent:
     def sync_tracker(self, spreadsheet_id: str, apply: bool = False, confirmation: str = "") -> dict:
         from .integrations.google_auth import GoogleGateway
         from .integrations.sheet_sync import sync_sheet
-        gateway=GoogleGateway("sheets",str(self.root / "secrets"))
+        gateway=GoogleGateway("sheets",self._credentials_override,legacy_dirs=self.legacy_credential_dirs)
         return sync_sheet(self.store,gateway,spreadsheet_id,apply,confirmation)

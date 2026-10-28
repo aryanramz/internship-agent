@@ -112,7 +112,7 @@ def run_checks(store, gateway, spreadsheet_id):
             "repeat_append_count":0,"repeat_update_count":0}
 
 
-def run_live(output: Path, secret_dir: str):
+def run_live(output: Path, secret_dir: str | None = None):
     # No interactive OAuth here: the operator signs in separately beforehand.
     from internship_agent.integrations.google_auth import GoogleGateway
     run_dir=output / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")+"-"+uuid.uuid4().hex[:8])
@@ -125,7 +125,7 @@ def run_live(output: Path, secret_dir: str):
 
     save()
     try:
-        gateway=GoogleGateway("sheets",secret_dir)
+        gateway=GoogleGateway("sheets",secret_dir,legacy_dirs=(Path("data/secrets"),))
         report["stage"]="create"
         save()
         created=gateway.api.spreadsheets().create(body={
@@ -152,7 +152,7 @@ def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--live",action="store_true",help="Create a fresh Google tracker and test synthetic writes")
     parser.add_argument("--confirm",default="")
-    parser.add_argument("--secret-dir",default="data/secrets")
+    parser.add_argument("--secret-dir",default=None,help="Override the shared per-user Google credential store")
     parser.add_argument("--output",type=Path,default=Path("data/sheets-validation"))
     args=parser.parse_args(argv)
     if not args.live:

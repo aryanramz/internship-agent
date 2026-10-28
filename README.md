@@ -4,7 +4,7 @@
 
 Internship Agent is an open-source Python project that combines employer job-board readers, an explainable matching engine, a SQLite application ledger, optional Google Workspace integrations, and an MCP tool interface. It's intended for students who want a disciplined, inspectable internship pipeline rather than a bulk-apply bot.
 
-**Project status: v0.4.0 — working local prototype, not production-ready.** Most automated tests are offline/mocked. Greenhouse discovery has [live validation and an opt-in integration check](docs/LIVE_ATS_VALIDATION.md); other provider endpoints and MCP/Google connections still need live validation. There is **no automatic job application submission or recruiter emailing**.
+**Project status: v0.4.0 — working local prototype, not production-ready.** Most automated tests are offline/mocked. Greenhouse discovery has [live validation](docs/LIVE_ATS_VALIDATION.md), and basic synthetic Sheets synchronization has [operator-reported live results](docs/SHEETS_VALIDATION.md). Other provider endpoints, Gmail and MCP connections still need live validation. There is **no automatic job application submission or recruiter emailing**.
 
 ## Features
 
@@ -15,7 +15,7 @@ Internship Agent is an open-source Python project that combines employer job-boa
 | Screening | Flags senior/graduate/clearance language | Does not determine legal/work eligibility |
 | Documents | Single-column DOCX resume and cover-letter draft from a verified profile | No guarantee of passing ATS; requires human review |
 | Tracking | SQLite status ledger with audit events and explicit approval step | Records confirmation evidence; doesn't independently verify submission |
-| Google | Gmail alert lead staging; Sheets dry-run and explicitly confirmed sync | Separate Google OAuth authorization; untested against live accounts |
+| Google | Gmail lead staging; exact Sheets previews, confirmed sync and local audit | Basic synthetic Sheets sync live-tested by operator; Gmail and broader scenarios remain unqualified |
 | MCP | Structured tool surface for supported MCP clients | ChatGPT client access, remote authentication, and hosting not configured |
 
 ## Quickstart (Windows, Python 3.11+)
@@ -89,12 +89,12 @@ python -m compileall -q src
 
 GitHub Actions runs tests across supported Python versions and checks for common accidental private-file commits. The file-checker is not a substitute for full secret scanning or security review.
 
-The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) provides a plan-only command and a separately confirmed synthetic tracker check. Its live OAuth qualification is still pending.
+The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operator-reported successful basic live sync and the remaining read-only local checks. Google credentials use a [shared per-user store](docs/GOOGLE_SETUP.md#credential-storage-and-compatibility), independent of `--data`. Install `.[test,google]` for the full offline SDK regression suite; CI does so on every supported Python version.
 
 ## Roadmap
 
 - **v0.4 (current):** public repo hygiene, synthetic offline demonstration, CI, documented tradeoffs and release artifacts.
-- **v0.5:** Greenhouse public discovery validated with sanitized integration fixtures; authorized Google sync verification using a test sheet remains pending.
+- **v0.5:** Greenhouse public discovery validated; basic synthetic Sheets OAuth, confirmed append and repeat no-op operator-validated. New credential routing has a focused read-only local follow-up.
 - **v0.6:** human-reviewed tailoring improvements, robust parsing/format QA and validation of MCP client connectivity.
 - **Future:** approved, platform-compliant application assistance; recruiter outreach drafts and confirmation monitoring.
 

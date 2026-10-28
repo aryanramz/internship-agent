@@ -12,7 +12,7 @@ from ..tracker import COLUMNS, STATUS_MAP, _track
 
 HEADER_ROW = 4
 SHEET_NAME = "Applications"
-SHEET_READ_RANGE = "'Applications'!A1:S5000"
+SHEET_READ_RANGE = "'Applications'!A:S"
 SHEET_APPEND_RANGE = "'Applications'!A4:S"
 AGENT_ID = re.compile(r"(?:^|;)\s*Agent ID:\s*([a-f0-9]{24})(?:\s*;|\s*$)", re.I)
 PROGRESSION = {"Not Applied":0, "Applied":1, "Assessment":2, "Interview":3, "Offer":4,
@@ -41,8 +41,11 @@ def _source_rows(store):
 
 def plan_sync(store, sheet_rows: list[list]) -> dict:
     """Pure planning: no network writes. Requires exact row-4 schema."""
-    if len(sheet_rows)<HEADER_ROW or [_get(sheet_rows[HEADER_ROW-1],i).strip() for i in range(19)] != COLUMNS:
+    if (not isinstance(sheet_rows,list) or len(sheet_rows)<HEADER_ROW
+            or not isinstance(sheet_rows[HEADER_ROW-1],list) or sheet_rows[HEADER_ROW-1] != COLUMNS):
         raise ValueError("Unexpected tracker headers: expected the original 19 columns on Applications row 4. No changes made.")
+    if len(sheet_rows)>=5000:
+        raise ValueError("Applications read window exceeds the supported size (populated row 5000 or later). No changes made. Archive or partition the tracker before syncing.")
     known={}; occupied=set(); max_app=0; collisions=[]
     for sheet_row, row in enumerate(sheet_rows[HEADER_ROW:], start=HEADER_ROW+1):
         app_number=_get(row,0).strip()
@@ -69,7 +72,9 @@ def plan_sync(store, sheet_rows: list[list]) -> dict:
             if actual != desired_status:
                 if actual not in PROGRESSION:
                     skipped.append({"job_id":jid,"row":rn,"reason":"Manual or unknown status; not overwritten"})
-                elif PROGRESSION[desired_status] > PROGRESSION[actual]:
+                elif actual in {"Offer","Rejected","Withdrawn"}:
+                    skipped.append({"job_id":jid,"row":rn,"reason":"Terminal outcome differs; review manually"})
+                elif desired_status in {"Rejected","Withdrawn"} or PROGRESSION[desired_status] > PROGRESSION[actual]:
                     updates.append({"range":f"'Applications'!K{rn}","values":[[desired_status]]})
                 else:
                     skipped.append({"job_id":jid,"row":rn,"reason":"Would downgrade or replace equal-stage outcome"})
