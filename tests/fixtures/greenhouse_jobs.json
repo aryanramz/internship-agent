@@ -1,0 +1,30 @@
+{
+  "jobs": [
+    {
+      "id": 1001,
+      "internal_job_id": 101,
+      "title": "Cloud Engineering Intern",
+      "updated_at": "2026-10-20T10:00:00Z",
+      "first_published": "2026-10-01T09:00:00Z",
+      "application_deadline": "2099-01-01T00:00:00Z",
+      "requisition_id": "EXAMPLE-1",
+      "location": {"name": "Example City"},
+      "absolute_url": "https://example.com/careers?gh_jid=1001&utm_source=fixture",
+      "language": "en",
+      "metadata": null,
+      "content": "&lt;p&gt;Learn &lt;b&gt;AWS&lt;/b&gt; &amp;amp; Python.&lt;/p&gt;&lt;p&gt;Build tools.&lt;/p&gt;&lt;script&gt;ignored()&lt;/script&gt;",
+      "departments": [{"id": 1, "name": "Engineering", "parent_id": null, "child_ids": []}],
+      "offices": [{"id": 1, "name": "Example Office", "location": "Example City", "parent_id": null, "child_ids": []}]
+    },
+    {
+      "id": 1002,
+      "internal_job_id": 102,
+      "title": "Cloud Engineering Intern",
+      "updated_at": "2026-10-21T10:00:00Z",
+      "location": {"name": "Remote"},
+      "absolute_url": "https://example.com/careers?gh_jid=1002",
+      "content": "<p>Use Python and Linux.</p>"
+    }
+  ],
+  "meta": {"total": 2}
+}

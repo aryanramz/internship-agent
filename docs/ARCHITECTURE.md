@@ -35,7 +35,7 @@ The `events` table keeps transition records. State transitions are guarded by th
 
 ## Integration boundaries
 
-- Public ATS discovery uses fixed provider URLs, HTTPS, bounded reads and no redirect-following; RSS requires explicit trusted user configuration. As of v0.4, live remote source behavior remains unverified in this build.
+- Public ATS discovery uses fixed provider URLs, HTTPS, bounded reads and no redirect-following; RSS requires explicit trusted user configuration. Greenhouse has a credential-free live ingestion check and synthetic HTTP replay coverage; see [live ATS validation](LIVE_ATS_VALIDATION.md). Other readers remain live-unverified.
 - Local Gmail API permission is read-only; extracted job-alert leads must be reviewed before import. Local Google Sheets permissions allow writes, but `sync-sheet` defaults to preview and applies changes only after exact confirmation.
 - A ChatGPT connector does **not** grant Python code access to its OAuth credentials or expose your local CLI to a cloud agent. Direct MCP use requires compatible client access and a securely authenticated transport. Current MCP server code is not production-ready and should not be publicly exposed.
 - Any browser-based submission or recruiter email action must be separately implemented and authorized; neither is currently included.

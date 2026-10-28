@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 from pathlib import Path
-from .sources import retrieve_board, normalize, SUPPORTED
+from .sources import retrieve_board, normalize, SUPPORTED, SourceError
 from .scoring import evaluate
 from .documents import create_documents,tailoring_report
 from .store import Store
@@ -36,7 +36,14 @@ class Agent:
                     counts[outcome]+=1
                 summary["by_source"].append(counts)
             except Exception as exc:
-                summary["errors"].append({"board":entry.get("company","unknown"),"error":str(exc)[:250]})
+                error={"board":entry.get("company","unknown"),"error":str(exc)[:250]}
+                if isinstance(exc, SourceError):
+                    error["code"]=exc.code
+                    if exc.http_status is not None:
+                        error["http_status"]=exc.http_status
+                    if exc.retry_after:
+                        error["retry_after"]=exc.retry_after
+                summary["errors"].append(error)
         return summary
 
 
