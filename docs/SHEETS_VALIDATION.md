@@ -16,8 +16,12 @@ local backend authorization; no connector credentials were used or accessed.
 The isolated tracker had the Applications worksheet and the expected 19 headers
 on row 4. Its ID, local application ID, credentials and database are deliberately
 omitted from public evidence. No actual application tracker was modified. The
-broader harness below was not rerun; the new credential routing and error messages
-are verified offline and have a focused read-only local check below.
+broader harness below was not rerun. Credential routing and error messages have
+offline regression coverage. The operator subsequently confirmed the focused
+Windows check at commit `6239e68`: existing authorization was reused with the
+isolated database, `existing_rows=1`, `agent_jobs=1`, zero appends/updates,
+`mode=preview`, `did_write=false`. Issue #2 and PR #5 are complete. This is
+operator-reported evidence, not a new test performed during roadmap reconciliation.
 
 ## Local setup
 
@@ -46,7 +50,8 @@ default, instead of coupling authorization to `--data`.
 
 ## Focused local verification after updating
 
-No repeated write/idempotency exercise is required. From the checkout where your
+The operator completed this check at `6239e68`; no repeat is needed for this
+reconciliation. The procedure remains for future upgrades. From the checkout where your
 legacy authorization and isolated test database already exist, set the isolated
 test tracker ID locally, then run **one read-only preview**:
 

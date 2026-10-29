@@ -1,51 +1,131 @@
-# Architecture and engineering tradeoffs
+# System architecture
 
-## Components
+## Direction and implementation boundary
 
-The system is local-first: `Store` persists normalized `Job` objects and one application state per job in SQLite. `Agent` orchestrates ingestion, ranking, document preparation and optional Google integrations. The CLI exposes commands without requiring an LLM. `mcp_server.py` offers only read-only summary, ranking and preview tools over stdio, opening an existing Store in SQLite read-only mode.
+Internship Agent is a local-first Python workflow platform with a SQLite
+application ledger. It is designed for ChatGPT-oriented assistance while remaining
+usable without ChatGPT, MCP, Google or a model API. The CLI is implemented; the
+lightweight local dashboard is planned. Deterministic processing handles routine
+collection/filtering/scoring; optional AI helps with language and judgment.
+
+The [capability matrix](CAPABILITIES.md) is the merged baseline at
+`3a79f555617453fc68dd51d36a9d1e51eabd2dcc`. [PR #8](https://github.com/aryanramz/internship-agent/pull/8)
+is unmerged gateway/startup work, not part of that baseline. No external MCP
+endpoint is active. See [roadmap](ROADMAP.md) and [release gates](RELEASE_PLAN.md).
+
+## Current components
+
+| Responsibility | Implemented boundary |
+|---|---|
+| Ingestion | `sources.py` retrieves/normalizes supported public APIs/feeds/imports; `models.py` validates board inputs and stable posting identity |
+| Employer sources | `source_detection.py` detects known board URLs; `service.py` suggests from ingested links; CLI explicitly registers boards in local source JSON |
+| Ledger | `Store` in `store.py`: jobs, applications, events and staged email leads in SQLite |
+| Orchestration | `Agent` in `service.py`: discovery, ranked views, document preparation, tracking and separately authorized optional Google operations |
+| Fit and documents | `scoring.py`: deterministic component scores/keyword warnings; `documents.py`: profile-based DOCX emphasis/drafts, not a claim-verification engine |
+| Local interfaces | `cli.py` for the working pipeline; `tracker.py` for reviewed CSV export; `scripts/run-daily.ps1` is an existing routine runner, not a qualified scheduler |
+| Optional Google | Per-user grants; Gmail read-only lead staging/review; Sheets preview/confirmed mirror synchronization |
+| Optional MCP | Import-safe `mcp_server.py` stdio and authenticated loopback `mcp_http.py`; exactly three read-only tools over an existing SQLite store |
 
 ```mermaid
 flowchart LR
-    Sources[Public ATS / feeds] --> Adapter[Source adapters + normalized Job]
-    Imports[Authorized imports / reviewed alerts] --> Adapter
-    Adapter --> Store[(SQLite jobs + applications + events)]
-    Profile[Private verified profile] --> Score[Explainable ranking]
-    Store --> Score --> Draft[DOCX resume + cover-letter draft]
-    Draft --> Human[Human review and approval]
-    Human --> External[Permitted external application workflow]
-    External --> Evidence[Operator-provided confirmation evidence]
-    Evidence --> Store
-    Store --> Sheets[Optional Google Sheets preview / confirmed sync]
-    MCP[Optional local MCP tools] -->|Read only| Store
+    Public[Permitted ATS APIs / feeds] --> Ingest[Normalize, stable IDs, dedup]
+    Import[Reviewed imports / alert leads] --> Ingest
+    Ingest --> Ledger[(SQLite: jobs, applications, events)]
+    CLI[Implemented local CLI] --> Agent[Python Agent service]
+    Agent --> Ledger
+    Facts[Private user-verified profile] --> Fit[Deterministic fit / draft emphasis]
+    Ledger --> Fit
+    Fit --> Draft[Local DOCX drafts]
+    Draft --> Human[Human review / explicit approval]
+    Human --> External[Externally completed application]
+    External --> Evidence[Operator-provided evidence]
+    Evidence --> Ledger
+    Agent --> Sheets[Optional preview / confirmed Sheets mirror]
+    MCP[Optional read-only MCP] --> Ledger
+    Chat[ChatGPT: actual cloud connection pending] -. authenticated transport required .-> MCP
 ```
 
-## Data ownership and confidence
+The external application box represents actions performed outside this backend.
+The backend does not submit forms or send recruiter messages. It records evidence
+supplied by the operator, without independently establishing employer receipt.
 
-- A job ID derives from provider, board token, and provider-specific posting ID. Canonical URLs help identify duplicated representations of the same posting.
-- Two different requisition IDs **must not** be merged merely because company and title match. URL-based deduplication has limits for reposts and tracking parameters.
-- SQLite is the local authoritative application ledger. A Google Sheet is an optional, reviewed mirror; it is not automatically the source of truth.
-- Job descriptions, alerts, URLs, source names and recruiter communications are untrusted external data. A saved alert isn't proof that a posting remains open.
-- The resume generator draws only from a verified profile and reorders emphasis rather than inventing accomplishments. ATS compliance and hiring outcomes are not guaranteed.
+## Data ownership, identity and evidence
 
-## Application state machine
+SQLite remains authoritative for job/application state. A Google Sheet is an
+optional reviewed mirror, not a second authority. Local source JSON is the current
+board configuration; #9 will extend it compatibly into an employer registry,
+without duplicating the application ledger. Profile/documents/credentials remain
+private files; structured verified-fact provenance is planned in #11.
 
-`discovered → prepared → approved → submitted → assessment/interview/offer/rejected/withdrawn` (some intermediate statuses can be skipped). A submission can be *recorded* only after an approved state and nontrivial confirmation evidence. The backend currently **does not submit applications** and cannot itself verify confirmation authenticity.
+Posting IDs derive from provider, board token and posting ID; canonical URLs
+support duplicate enrichment. Existing URL-based dedup has limitations. Never
+merge different requisitions solely on company/title; #10 owns provenance,
+reposts and lifecycle refinements. Publication, first discovery and last-seen
+timestamps have different meanings. Source failure/absence is not evidence of a
+closed posting or a rejected application.
 
-The `events` table keeps transition records. State transitions are guarded by the `Store` implementation rather than by a prompt. The exact `APPROVE <job_id>` string is an operator confirmation mechanism, **not** cryptographic human authentication.
+Job descriptions, alerts, URLs and messages are untrusted data. A saved lead is
+not proof of a current opening. Current profile verification depends on user input;
+existing document code does not establish every claim's truth. #11/#13 add explicit
+provenance and QA. A fit score is neither eligibility nor a hiring probability.
 
-## Integration boundaries
+## Application state and approval
 
-- Public ATS discovery uses fixed provider URLs, HTTPS, bounded reads and no redirect-following; RSS requires explicit trusted user configuration. Greenhouse has a credential-free live ingestion check and synthetic HTTP replay coverage; see [live ATS validation](LIVE_ATS_VALIDATION.md). Other readers remain live-unverified.
-- Local Gmail API permission is read-only; extracted job-alert leads must be reviewed before import. Local Google Sheets permissions allow writes, but `sync-sheet` defaults to preview and applies changes only after exact confirmation.
-- Google grants use a per-user credential directory independent of the SQLite data root. Default legacy-token adoption preserves the original; explicit directory overrides isolate accounts. Sheets errors are translated locally without raw API/OAuth payloads; audit events retain counts and failure stage only. See [credential storage](GOOGLE_SETUP.md#credential-storage-and-compatibility).
-- A ChatGPT connector does **not** grant Python code access to its OAuth credentials or expose your local CLI to a cloud agent. Direct cloud MCP use requires compatible client access and a securely authenticated transport. Stdio remains unchanged; a separate [authenticated HTTP adapter](MCP_HTTP_VALIDATION.md) binds only loopback, with pinned signing keys and owner/client/resource/scope validation per invocation. The [zero-cost architecture](MCP_CONNECTION_OPTIONS.md) is conditionally approved for local qualification; public routing is not implemented or activated.
-- The MCP factory is import-safe and never initializes a database. Read-only annotations describe its tools; SQLite `mode=ro` and absence of write/Google/file tools enforce the initial data boundary. Expected failures are sanitized. Requested ranking/preview data reaches the client; full profiles, credentials and documents are not file resources.
-- Any browser-based submission or recruiter email action must be separately implemented and authorized; neither is currently included.
+The existing ledger starts `discovered → prepared → approved → submitted`, then
+permits guarded assessment/interview/offer/rejected/withdrawn transitions.
+`shortlisted` is also a declared status; do not infer a complete UI/state editor.
+The exact transition rules live in `Store`, not in prompts.
 
-## Why the design is split
+Preparation can reset pre-submission approval. The ledger rejects preparation of
+submitted/completed states, but `Agent.prepare` currently generates files before
+that rejection, using deterministic filenames. A rejected preparation can therefore
+overwrite existing documents; file protection is not established. #14 must guard
+before generation and qualify file versioning/recovery. Recording submission requires approved state and nontrivial operator
+evidence. `APPROVE <job_id>` is an explicit local confirmation mechanism, not
+cryptographic human authentication. #14 must qualify document-version binding,
+failure recovery and repeat actions before any browser assistant depends on it.
+#17 will add only individually permitted, explicitly approved workflows.
 
-This separation lets discovery recover from one provider's failure, allows the fit-score calculation to remain inspectable, and preserves application state independent of LLM context. It also permits the offline synthetic demo to exercise ingestion, ranking and drafting without website accounts, API keys, or personal data.
+## Optional integrations and security
 
-## Known gaps
+- Public readers use fixed provider endpoints, HTTPS, bounded responses and refused
+  redirects. User RSS requires explicit trusted configuration. Only Greenhouse has
+  dated live ingestion evidence; other readers remain live-unqualified.
+- Google credentials use a shared per-user location independent of database root,
+  explicit account overrides and nondestructive legacy adoption. Tokens are local
+  JSON protected by account ACLs, not an encrypted vault. A ChatGPT connector does
+  not grant the backend its credentials. See [Google setup](GOOGLE_SETUP.md).
+- Gmail staging is read-only and reviewed before import. Sheets writes require
+  exact confirmation after a preview, ownership/header checks and a pre-write
+  reread. Multi-request writes remain non-atomic and uncertain outcomes require
+  reconciliation; [basic live evidence](SHEETS_VALIDATION.md) does not certify all
+  failure cases.
+- MCP uses SQLite `mode=ro`/`query_only`, minimal projections and sanitized
+  expected errors. It exposes summary, ranking and preview, with no file, Google,
+  ingestion, document, approval or submission tool. The HTTP adapter retains
+  pinned signature/issuer/single-audience/expiry/scope/client/owner checks per call.
+- Public connectivity uses the separately approved Tailscale Personal/Funnel +
+  local Keycloak architecture, with qualifications tracked in #3 and pending PR #8.
+  Local provider success is not actual ChatGPT sign-in/refresh proof. No exposure,
+  billing, payment method or paid resource is authorized by this documentation.
+  See [OAuth evidence](MCP_OAUTH_COMPATIBILITY.md) and [connection boundaries](INTEGRATION.md).
 
-Real integration testing, ATS schema drift handling, richer structured eligibility rules, concurrency-safe multi-request Google writes, full credential management, request-level audit redaction, external OAuth/routing qualification, and form automation remain future work. See [Threat model](THREAT_MODEL.md) and [Roadmap](ROADMAP.md).
+## Planned evolution, without backend replacement
+
+1. Extend existing readers/configuration into a qualified employer registry and
+   incremental source-health/lifecycle system (#9/#10).
+2. Add structured candidate facts/eligibility, explainable preferences/taxonomy and
+   claim-traced document variants (#11–#13). Keep deterministic operation available.
+3. Qualify a recoverable preparation/tracking service contract (#14), then share
+   it through the CLI and a small loopback dashboard (#16), without a second ledger.
+4. Add owned Windows scheduling with retry/catch-up/notifications (#15), independent
+   of optional identity/gateway process startup.
+5. Add permission-scoped browser assistance, verified contact/draft/reply workflows
+   and evidence-based analytics (#17–#19), retaining human approvals.
+6. Assess optional cloud operation only after reliable local gates (#20). Prefer
+   no additional infrastructure; a no-go leaves the local system fully usable.
+
+Future dashboard mutations need local session, Host/Origin/CSRF and confirmation
+controls; those are requirements, not implemented protections. Optional AI cannot
+invent facts, infer legal answers, authorize actions or require paid API access.
+The [threat model](THREAT_MODEL.md) records current controls and remaining risks.
