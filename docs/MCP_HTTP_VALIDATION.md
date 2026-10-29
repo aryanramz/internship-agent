@@ -13,7 +13,8 @@ submission, document generation, Google, arbitrary file or write tools.
 
 The HTTP entry point binds only `127.0.0.1`; there is no `--host` switch. Its
 resource identifier must be `http://127.0.0.1:PORT/mcp`. Public HTTPS resource
-identifiers are intentionally refused in this stage. The only routes are `/mcp`
+identifiers require the separate explicitly configured [Phase 3 gateway](MCP_EXTERNAL_CONNECTIVITY.md);
+the original local CLI still refuses them. The only adapter routes are `/mcp`
 and `/.well-known/oauth-protected-resource/mcp`. Metadata is public and contains
 only the configured resource, issuer and scope. Every MCP request needs OAuth.
 This is the SDK resource-server integration, not a home-made OAuth issuer.

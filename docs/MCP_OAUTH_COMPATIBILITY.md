@@ -124,10 +124,11 @@ Tunnel free-price assumption, paid domain, API credits or paid hosting is used.
 
 ## Exposure gate
 
-Local [adapter/authentication checks](MCP_HTTP_VALIDATION.md) pass. There is still
-no external reverse proxy or service configuration. Before enabling Funnel, a
-separate reviewed routing stage must qualify exact public HTTPS issuer/resource
-URLs, callback and discovery, OAuth login/assets/token paths, and denial of
+Local [adapter/authentication checks](MCP_HTTP_VALIDATION.md) pass. The
+[Phase 3 gateway](MCP_EXTERNAL_CONNECTIVITY.md) now implements the routing stage
+on loopback; no Funnel route or public service is active. Before enabling Funnel,
+review its qualification of exact HTTPS issuer/resource URLs, callback/discovery,
+OAuth login/assets/token paths, and denial of
 Keycloak admin/master realm, management, filesystem, database, Google credentials
 and every write-capable tool. Never forward the whole Keycloak port or a folder.
 

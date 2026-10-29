@@ -1,0 +1,3 @@
+@echo off
+"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -File "%~dp0Manage.ps1" -Operation Configure
+pause

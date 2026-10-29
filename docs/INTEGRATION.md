@@ -16,9 +16,11 @@ Local SDK interoperability is tested; a ChatGPT cloud connection is not yet prov
 2. Review the conditionally approved [zero-cost architecture](MCP_CONNECTION_OPTIONS.md)
    and [OAuth findings](MCP_OAUTH_COMPATIBILITY.md). Keycloak passed the local
    static-client/S256 experiment; offline access remains excluded.
-3. Public HTTPS routing, administration isolation and persistence need a separate
-   reviewed stage before Funnel activation. Cloud ChatGPT cannot directly reach
-   `localhost` or stdio. No external endpoint is currently configured.
+3. The [Phase 3 gateway](MCP_EXTERNAL_CONNECTIVITY.md) implements narrow HTTPS/OAuth
+   routing on loopback. Its implementation needs review before Funnel activation.
+   Cloud ChatGPT cannot directly reach `localhost` or stdio; no external endpoint
+   has been activated. Use the [Windows controls](MCP_WINDOWS_STARTUP.md) only
+   after reviewed one-time setup.
 4. Prove discovery and a read-only call from the actual account before claiming
    cloud integration. Do not expose approval, preparation, submission recording,
    Google operations, discovery/import or other state-changing tools initially.

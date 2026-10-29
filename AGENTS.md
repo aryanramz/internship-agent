@@ -30,5 +30,5 @@ Implement a trustworthy, local-first internship pipeline. The SQLite ledger is a
 - `scoring.py`: deterministic ranking and eligibility warnings
 - `documents.py`: factual resume/cover-letter drafting
 - `integrations/`: optional Google OAuth, alert parsing, Sheets synchronization
-- `mcp_server.py`: three read-only stdio tools; `mcp_http.py`: authenticated loopback-only PoC; public routing is not implemented
+- `mcp_server.py`: three read-only stdio tools; `mcp_http.py`: strict JWT/HTTP adapter; `mcp_gateway*.py`: reviewed-route preparation, still loopback-bound with Funnel activation gated
 - `scripts/demo.py`: safe offline proof of concept

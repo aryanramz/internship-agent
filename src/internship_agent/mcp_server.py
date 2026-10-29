@@ -37,13 +37,14 @@ def create_server(data_root: str | Path, profile_path: str | Path, *,
     profile=str(Path(profile_path).resolve())
     server=MCPServer("Internship Agent",version="0.4.0",instructions=INSTRUCTIONS,log_level="WARNING",
                      auth=auth,token_verifier=token_verifier,middleware=middleware)
+    tool_meta={"securitySchemes":[{"type":"oauth2","scopes":["internship:read"]}]} if auth is not None else None
 
-    @server.tool(annotations=READ_ONLY)
+    @server.tool(annotations=READ_ONLY,meta=tool_meta)
     def application_summary() -> dict[str, Any]:
         """Use this to count local applications by stage. Reads only; no files or Google calls."""
         return _safe_read(agent.store.count,"Could not read the application summary. Check the configured local database.")
 
-    @server.tool(annotations=READ_ONLY)
+    @server.tool(annotations=READ_ONLY,meta=tool_meta)
     def rank_jobs(limit: Annotated[int,Field(ge=1,le=100,strict=True)]=20,
                   min_score: Annotated[int,Field(ge=0,le=100,strict=True)]=45) -> dict[str, Any]:
         """Use this to rank existing jobs and obtain job IDs. Local verified skills only; no discovery or writes."""
@@ -51,7 +52,7 @@ def create_server(data_root: str | Path, profile_path: str | Path, *,
             "Could not rank jobs. Check the configured local database and verified profile JSON.")
         return {"jobs":jobs}
 
-    @server.tool(annotations=READ_ONLY)
+    @server.tool(annotations=READ_ONLY,meta=tool_meta)
     def preview_application(job_id: Annotated[str,Field(pattern=r"^[a-f0-9]{24}$")]) -> dict[str, Any]:
         """Use a job ID from rank_jobs to preview fit and matching skills. Does not create documents or apply."""
         try:

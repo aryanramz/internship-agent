@@ -24,7 +24,7 @@ If tools cannot be accessed in a ChatGPT session because of plan/host restrictio
 
 - Account controls were confirmed by the operator; the staged architecture is
   conditionally approved. An actual authenticated ChatGPT call is still required.
-- Stdio and the authenticated loopback HTTP proof of concept expose the same
-  three tools. Public routing is not configured; no unauthenticated exposure is allowed.
+- Stdio, authenticated HTTP and the prepared HTTPS gateway expose the same three
+  tools. Funnel remains disabled pending review; no unauthenticated exposure is allowed.
 - Never enable billing, buy credits or provision paid/metered resources. Use the
   [documented zero-cost proposal](MCP_CONNECTION_OPTIONS.md) or local fallback.

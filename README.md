@@ -16,7 +16,7 @@ Internship Agent is an open-source Python project that combines employer job-boa
 | Documents | Single-column DOCX resume and cover-letter draft from a verified profile | No guarantee of passing ATS; requires human review |
 | Tracking | SQLite status ledger with audit events and explicit approval step | Records confirmation evidence; doesn't independently verify submission |
 | Google | Gmail lead staging; exact Sheets previews, confirmed sync and local audit | Basic synthetic Sheets sync live-tested by operator; Gmail and broader scenarios remain unqualified |
-| MCP | Validated read-only stdio tools and an authenticated loopback HTTP proof of concept | [Local HTTP checks](docs/MCP_HTTP_VALIDATION.md); external routing and actual ChatGPT invocation remain unqualified |
+| MCP | Read-only stdio/HTTP tools and a narrow OAuth gateway with HTTPS resource identity | [Gateway qualification](docs/MCP_EXTERNAL_CONNECTIVITY.md); Funnel remains disabled and actual ChatGPT invocation is pending |
 
 ## Quickstart (Windows, Python 3.11+)
 
@@ -95,7 +95,7 @@ The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operat
 
 - **v0.4 (current):** public repo hygiene, synthetic offline demonstration, CI, documented tradeoffs and release artifacts.
 - **v0.5:** Greenhouse public discovery validated; basic synthetic Sheets OAuth, confirmed append and repeat no-op operator-validated. New credential routing has a focused read-only local follow-up.
-- **v0.6:** read-only stdio and authenticated loopback HTTP validated; the zero-cost architecture is conditionally approved. Public routing and an actual authenticated ChatGPT call remain unqualified. Tailoring/format QA remains future work.
+- **v0.6:** read-only MCP and a narrow HTTPS/OAuth gateway implemented; [Phase 3 qualification](docs/MCP_EXTERNAL_CONNECTIVITY.md) precedes any reviewed Funnel activation. An actual authenticated ChatGPT call is still required. Tailoring/format QA remains future work.
 - **Future:** approved, platform-compliant application assistance; recruiter outreach drafts and confirmation monitoring.
 
 ## Privacy and license

@@ -48,11 +48,11 @@ flowchart LR
 ```
 
 The [authenticated HTTP adapter](MCP_HTTP_VALIDATION.md) is now implemented for
-loopback only, preserving the existing three tools. Its configuration explicitly
-rejects public resource URLs. The [OAuth comparison](MCP_OAUTH_COMPATIBILITY.md)
-records provider experiments and limitations. A future reviewed change must add
-an exact external route allowlist and qualify it locally before Funnel activation
-or connection in the operator's ChatGPT account.
+loopback only, preserving the existing three tools. The [Phase 3 gateway](MCP_EXTERNAL_CONNECTIVITY.md)
+now adds explicit HTTPS identity and an exact OAuth route allowlist without
+starting Funnel. The [OAuth comparison](MCP_OAUTH_COMPATIBILITY.md) records provider
+limitations. Review and local qualification precede any Funnel activation or
+connection in the operator's ChatGPT account.
 
 ## Authentication and data boundaries
 
