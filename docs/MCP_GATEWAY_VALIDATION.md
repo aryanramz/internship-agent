@@ -65,7 +65,11 @@ The staged implementation received a completed Codex Security diff review with
 no confirmed vulnerabilities. A follow-up defense-in-depth change disables the
 shared proxy client's cookie storage; its two-browser regression failed before
 the policy and passed after it. That small follow-up is reviewed separately from
-the sealed snapshot. Passing local checks do not replace the live activation gates.
+the sealed snapshot. The final post-roadmap security review, scan
+`b64c11cf-ea4d-4e6b-aea9-d35ca0733c84`, covered the complete integrated runtime
+including that cookie policy and found no confirmed vulnerabilities. Independent
+HTTP/authentication and Windows-control reviews found no blocking defects.
+Passing local checks do not replace the live activation gates.
 
 PyPA dependency auditing found no known advisories after updating the isolated
 environment's old pip tooling. CI audits a complete pinned public dependency
@@ -73,8 +77,12 @@ inventory; the editable application is reviewed as source. This advisory check
 does not establish absence of unknown vulnerabilities or supply-chain compromise.
 Full regression and review results are recorded with the PR and its CI checks.
 The final Windows Python 3.12 regression run on 2026-10-29 passed **279 tests and
-22 subtests**, with three optional live tests skipped. Compilation, dependency
-consistency, staged whitespace and the 88-file repository privacy check passed.
+22 subtests**, with three expected skips (two optional live checks and the
+POSIX-only permissions check). Compilation, dependency consistency and whitespace
+checks passed. The final integrated privacy check covered **91 tracked files**;
+the documentation check covered **30 Markdown files and 100 local links/anchors**,
+with zero problems. No provider/services/tasks were installed or activated during
+final merge qualification.
 
 ## Reproduce offline checks
 

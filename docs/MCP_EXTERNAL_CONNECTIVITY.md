@@ -147,7 +147,7 @@ Host/forwarded values to the fixed loopback provider. It never follows upstream
 redirects. Outgoing navigation is restricted to the configured origin/login routes
 or exact ChatGPT callback with matching `iss`; token endpoints cannot redirect.
 Separate secure cookies are preserved only for the requesting browser. The shared
-upstream connection pool never retains a cookie jar or reuses another browser's
+upstream connection pool never stores cookies or reuses another browser's
 session, even if a provider cookie omits `Secure`. Errors are sanitized; access/console logs
 are suppressed, including hidden Windows launches. Concurrency, timeouts and
 response/body sizes are bounded; this is not a general-purpose internet proxy.
