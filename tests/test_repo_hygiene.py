@@ -7,7 +7,8 @@ from scripts import check_repo_hygiene
 
 
 @pytest.mark.parametrize("relative",["google_sheets_token-abcd.tmp","client_secret_download.json",
-    "backup/credentials/store.json","backup/agent.db-wal","backup/agent.db-shm"])
+    "backup/credentials/store.json","backup/agent.db-wal","backup/agent.db-shm",
+    "config/mcp-auth.json","config/mcp-jwks.json"])
 def test_private_credential_and_database_artifacts_are_ignored_and_rejected(monkeypatch,tmp_path,relative,capsys):
     root=Path(__file__).resolve().parents[1]
     result=subprocess.run(["git","check-ignore","--stdin"],input=(relative+"\n").encode(),cwd=root,capture_output=True)

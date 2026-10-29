@@ -1,8 +1,9 @@
 # Local read-only MCP validation — Issue #3
 
 Status (2026-10-28): local protocol validation implemented. **ChatGPT cloud
-connection is not configured or validated.** External architecture approval is
-required before adding HTTP/OAuth endpoints or configuring a tunnel.
+connection is not configured or validated.** The conditionally approved staged
+[authenticated HTTP proof of concept](MCP_HTTP_VALIDATION.md) runs on loopback
+only. Public routing and tunnel activation remain gated.
 
 ## Validated surface
 
@@ -40,8 +41,9 @@ must be refreshed when updating from an older experimental adapter.
   state. Explicit server construction requires an already existing database.
 - Tool outputs use typed dictionary annotations; bare `dict` returns in the
   installed SDK produced text without `structured_content`.
-- The module starts **stdio only**. It exposes no host/port/HTTP switch and creates
-  no network listener. HTTP transport is a future, separately approved change.
+- This module starts **stdio only**. It exposes no host/port/HTTP switch and creates
+  no network listener. The separately authorized [HTTP proof of concept](MCP_HTTP_VALIDATION.md)
+  uses a distinct entry point with mandatory authentication and loopback binding.
 - Bounds and ID schemas reject malformed input. Expected failures are safe MCP
   tool errors, without private profile values, filenames or raw tracebacks.
 - Preview returns matching skills only; unrelated profile skills, contact fields,

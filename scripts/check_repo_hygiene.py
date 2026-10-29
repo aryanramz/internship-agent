@@ -30,7 +30,7 @@ def tracked_paths() -> list[str]:
 
 def main() -> int:
     failures = []
-    bad_name = re.compile(r"(^|/)(data/|demo-output/|generated/|secrets/|credentials/|profile\.json$|sources\.json$|google-oauth-client\.json$|client_secret[^/]*\.json$)|\.(db(?:-shm|-wal)?|sqlite3?|pem|key)$|(^|/)\.env($|\.)|token\.json$|google_[^/]*_token[^/]*\.tmp$|credentials[^/]*\.json$", re.I)
+    bad_name = re.compile(r"(^|/)(data/|demo-output/|generated/|secrets/|credentials/|profile\.json$|sources\.json$|google-oauth-client\.json$|mcp-(?:auth|jwks)\.json$|client_secret[^/]*\.json$)|\.(db(?:-shm|-wal)?|sqlite3?|pem|key)$|(^|/)\.env($|\.)|token\.json$|google_[^/]*_token[^/]*\.tmp$|credentials[^/]*\.json$", re.I)
     # Match likely tokens and credential payloads without embedding personal values.
     credential_patterns = [
         re.compile(r"gh[pousr]_[A-Za-z0-9]{36}"),

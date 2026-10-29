@@ -30,11 +30,13 @@ def _safe_read(operation, message):
         raise ToolError(message) from None
 
 
-def create_server(data_root: str | Path, profile_path: str | Path) -> MCPServer:
+def create_server(data_root: str | Path, profile_path: str | Path, *,
+                  auth=None, token_verifier=None, middleware=None) -> MCPServer:
     """Explicit construction; imports never create/open a DB or load a profile."""
     agent=Agent(str(data_root),read_only=True)
     profile=str(Path(profile_path).resolve())
-    server=MCPServer("Internship Agent",version="0.4.0",instructions=INSTRUCTIONS,log_level="WARNING")
+    server=MCPServer("Internship Agent",version="0.4.0",instructions=INSTRUCTIONS,log_level="WARNING",
+                     auth=auth,token_verifier=token_verifier,middleware=middleware)
 
     @server.tool(annotations=READ_ONLY)
     def application_summary() -> dict[str, Any]:

@@ -1,7 +1,9 @@
 # ChatGPT connection proposal — zero additional service costs
 
-Research checked 2026-10-28. **Proposal only: approval required before external
-endpoint implementation, accounts, secrets, tunnel setup or service configuration.**
+Research checked 2026-10-28. **Conditionally approved for a staged local proof of
+concept. Tailscale Personal + Funnel is the preferred transport candidate;
+Keycloak remains subject to compatibility validation. No external endpoint or
+tunnel has been activated.**
 No OpenAI billing/credits, paid domain, paid hosting, trial upgrade or metered
 infrastructure is authorized. This work created none of those resources.
 
@@ -24,7 +26,7 @@ permissions; this is not a claim that every Plus account has identical access.
 | zrok Free | Advertises $0/no credit card and a daily traffic limit; public shares without billing verification have an interstitial. | Not selected: unattended MCP compatibility is uncertain, and adding a card to remove the interstitial violates the requirement. [Pricing](https://zrok.io/pricing/) |
 | Local stdio MCP host | Already validated locally; no tunnel, domain, hosting or Platform key. | Safe zero-service-cost fallback; it does **not** establish a cloud custom-plugin connection. [Local host support](https://learn.chatgpt.com/docs/extend/mcp) |
 
-## Recommended architecture for approval
+## Staged architecture
 
 Use the existing Windows PC, Tailscale's free **Personal** plan, Funnel HTTPS,
 and a self-hosted open-source Keycloak authorization server. A small local reverse
@@ -45,9 +47,12 @@ flowchart LR
     M --> P[Local verified profile]
 ```
 
-Future HTTP support is not implemented in this PR. After approval, implement and
-test the authenticated adapter on loopback first. Only then enable Funnel and add
-the Server URL/OAuth connection in the operator's existing ChatGPT account.
+The [authenticated HTTP adapter](MCP_HTTP_VALIDATION.md) is now implemented for
+loopback only, preserving the existing three tools. Its configuration explicitly
+rejects public resource URLs. The [OAuth comparison](MCP_OAUTH_COMPATIBILITY.md)
+records provider experiments and limitations. A future reviewed change must add
+an exact external route allowlist and qualify it locally before Funnel activation
+or connection in the operator's ChatGPT account.
 
 ## Authentication and data boundaries
 
@@ -62,8 +67,8 @@ custom API-key headers are not substitutes. [OpenAI authentication requirements]
 Keycloak's [ChatGPT guidance](https://www.keycloak.org/securing-apps/mcp-authz-server#chatgpt-integration)
 warns of CIMD incompatibility; OpenAI's current auth guide describes a legacy-field
 transition that may resolve that mismatch. The official pages disagree. Do not
-rely on automatic CIMD registration initially; verify the static-client path and
-audience binding end-to-end after approval. Reject the approach if interoperability
+rely on automatic CIMD registration initially; use the local static-client
+experiments and require audience/resource binding end-to-end. Reject the approach if interoperability
 requires an insecure workaround. Do not build a home-grown authorization server.
 
 Funnel makes the selected HTTPS endpoint publicly reachable. Tailnet membership
@@ -103,8 +108,10 @@ need maintenance. [Funnel persistence](https://tailscale.com/docs/reference/tail
 
 ## Approval and acceptance gate
 
-Approve the **Personal Funnel + local Keycloak + read-only MCP** design before
-implementation. No private credentials are requested now. Later acceptance must
+The operator conditionally approved **Personal Funnel + local read-only MCP**,
+with Keycloak a candidate rather than a finalized dependency. Local-only
+authentication checks precede every exposure decision. No private credentials are
+requested. External-stage acceptance must
 prove discovery/calls from the actual ChatGPT account, rejection of missing,
 forged, expired and wrong-audience tokens, owner-only scope, restart persistence,
 and no possible paid resource/automatic upgrade. Keep only synthetic data during
