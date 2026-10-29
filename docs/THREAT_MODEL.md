@@ -1,4 +1,9 @@
-# Threat model — v0.4
+# Threat model — local workflow baseline
+
+Current versus planned controls are reconciled in [CAPABILITIES.md](CAPABILITIES.md)
+against develop `3a79f555617453fc68dd51d36a9d1e51eabd2dcc`. Gateway/startup
+work in [PR #8](https://github.com/aryanramz/internship-agent/pull/8) is unmerged;
+it must not be counted as deployed protection or activated by this roadmap.
 
 ## Assets and trust zones
 
@@ -33,13 +38,26 @@
 
 ## Production readiness blockers
 
-Requires explicit authenticated access control, scoped user identities, secrets-management policy, HTTPS termination, request tracing with PII redaction, stronger SSRF/DNS protection, integration test environment, source rate-limit backoff, and secure user action confirmation. Do **not** claim the project meets production security standards today.
+The merged loopback HTTP adapter already validates pinned tokens and owner/client/
+resource/scope per invocation. Production exposure still needs reviewed routing,
+HTTPS qualification, operational identity/secret management, redacted observability,
+stronger SSRF/DNS controls, source backoff and qualified user-action confirmation.
+Do not claim production security readiness from local tests.
+
+Planned dashboard mutations must enforce local session/Host/Origin/CSRF and
+explicit confirmation; unattended runs cannot inherit permission to submit, send
+mail or write Sheets. Browser/recruiter workflows must bind concrete approved
+actions to verified facts and reconcile uncertain outcomes before retrying.
+These are requirements for Issues #14–#18, not implemented controls. Optional AI
+must not invent facts or upgrade untrusted content into authorization. Core local
+operation remains independent of optional MCP/Google/identity infrastructure.
 
 ## ChatGPT cloud boundary — local qualification only
 
-The [connection architecture](MCP_CONNECTION_OPTIONS.md) conditionally selects
-Personal Funnel transport; [local OAuth findings](MCP_OAUTH_COMPATIBILITY.md)
-determine whether Keycloak can be the issuer. The [HTTP adapter](MCP_HTTP_VALIDATION.md)
+The selected [connection architecture](MCP_CONNECTION_OPTIONS.md) uses Personal
+Funnel transport and local Keycloak, subject to staged qualification; the
+[OAuth findings](MCP_OAUTH_COMPATIBILITY.md) record interoperability limits.
+The [HTTP adapter](MCP_HTTP_VALIDATION.md)
 is implemented only on loopback. Funnel is public reachability, not caller authorization. Future access
 must validate issuer, audience, expiry, signature, read scope and the authorized
 local user; admin routes must remain private. MCP credentials are separate from

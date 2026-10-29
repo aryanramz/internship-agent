@@ -1,6 +1,15 @@
-# Job source coverage — v0.2
+# Job source coverage and qualification
 
 "Reader" means normalizing postings into the local job database. It does **not** imply authorization to apply, authenticated access, or an assurance that all postings are returned.
+
+Baseline: merged develop at `3a79f555617453fc68dd51d36a9d1e51eabd2dcc`.
+Only Greenhouse has the recorded live board qualification. Other listed readers
+are implemented with local/synthetic coverage, not individually live-qualified.
+Existing `add-source`/`suggest-sources` are board registration/detection, not a
+complete employer registry or general web crawler. [Issue #9](https://github.com/aryanramz/internship-agent/issues/9)
+extends qualification to Greenhouse/Lever/Ashby and a compatible registry;
+[Issue #10](https://github.com/aryanramz/internship-agent/issues/10) adds health,
+incremental scans and posting lifecycle. See [capability evidence](CAPABILITIES.md).
 
 ## Implemented readers — 18 source types
 
@@ -29,7 +38,10 @@
 
 ## Broad platforms through approved data/import workflows
 
-The following sites do **not** have direct account scrapers in this project. The job can still enter the unified pipeline from user-saved alerts, consented CSV/JSON exports, or a ChatGPT-connected job-search tool via `import_external_jobs`:
+The following sites do **not** have direct account scrapers in this project.
+Reviewed records can enter through local CLI `import-jobs`, CSV/JSON readers or
+reviewed Gmail leads. The backend `Agent.import_external_jobs` method is internal
+to those local workflows; it is **not registered as an MCP tool**:
 
 - Handshake (including school-eligible internship postings, when authorized)
 - LinkedIn Jobs
@@ -48,7 +60,12 @@ The following sites do **not** have direct account scrapers in this project. The
 - Levels.fyi jobs
 - Internships.com and other internship aggregators, subject to their current availability and terms
 
-For these services, configure **saved searches and email alerts** and use the Gmail plugin to extract job metadata, then pass reviewed structured records to the MCP `import_external_jobs` tool. The `csv_import`/`json_import` readers also accept exported structured records. This path does **not** read an authenticated account directly and does not automatically grant access to school-exclusive Handshake listings.
+For services where authorized alerts/exports are available, review their metadata
+and save structured records privately, then use `internship-agent import-jobs FILE`
+or the `csv_import`/`json_import` readers. A connected Gmail/job-search tool may
+assist review under its own permissions, but cannot call a nonexistent MCP import
+tool. This path does not read a protected account directly or grant access to
+school-exclusive Handshake postings. Local Gmail staging is implemented but live-unqualified.
 
 Handshake documents job alert emails; LinkedIn documents saved-search emails. LinkedIn prohibits third-party site scraping and unauthorized automation. Indeed restricts bot and scraper access absent express permission. Do **not** try to bypass authentication, challenges, request-rate controls, or school authorization.
 
@@ -73,7 +90,11 @@ For a JSON import:
 ]
 ```
 
-You can also send an array of the same objects through MCP's `import_external_jobs(records)` tool. This lets ChatGPT search Indeed/ZipRecruiter via available connectors or inspect saved alert emails, then hand off **verified, cited links** to the agent without scraping those sites.
+The JSON array can be passed to the local `import-jobs` command after review.
+Current MCP exposes only `application_summary`, `rank_jobs` and
+`preview_application`; discovery/import/write tools remain deliberately absent.
+Connector availability is account-specific and does not authenticate the local
+backend. Imported leads retain uncertainty until the employer posting is checked.
 
 ## Sources and API documentation
 

@@ -1,11 +1,18 @@
 # ChatGPT connection proposal — zero additional service costs
 
-Research checked 2026-10-28. **Conditionally approved for a staged local proof of
-concept. Tailscale Personal + Funnel is the preferred transport candidate;
-Keycloak remains subject to compatibility validation. No external endpoint or
-tunnel has been activated.**
+Research checked 2026-10-28; roadmap status reconciled 2026-10-29.
+**The Tailscale Personal/Funnel + local Keycloak architecture is selected for
+staged qualification. Actual ChatGPT compatibility remains unproven. No external
+endpoint or tunnel has been activated.**
 No OpenAI billing/credits, paid domain, paid hosting, trial upgrade or metered
 infrastructure is authorized. This work created none of those resources.
+
+Reconciliation note, 2026-10-29: the operator selected the Tailscale
+Personal/Funnel + local Keycloak architecture. Merged PR #7 qualified local
+authenticated HTTP; [PR #8](https://github.com/aryanramz/internship-agent/pull/8)
+contains gateway/startup work and is still unmerged. The options below preserve
+the research record, not a claim of active connectivity. Actual ChatGPT invocation
+remains Issue #3 on an independent track; see the [master roadmap](ROADMAP.md).
 
 The operator has confirmed their Plus account's custom MCP Server URL, Tunnel
 and OAuth controls. We accept that account-specific observation. Official
@@ -108,9 +115,9 @@ need maintenance. [Funnel persistence](https://tailscale.com/docs/reference/tail
 
 ## Approval and acceptance gate
 
-The operator conditionally approved **Personal Funnel + local read-only MCP**,
-with Keycloak a candidate rather than a finalized dependency. Local-only
-authentication checks precede every exposure decision. No private credentials are
+The operator selected **Personal Funnel + local Keycloak + read-only MCP**.
+Pending PR #8 review and local authentication/routing/startup qualification
+precede a separately authorized exposure decision. No private credentials are
 requested. External-stage acceptance must
 prove discovery/calls from the actual ChatGPT account, rejection of missing,
 forged, expired and wrong-audience tokens, owner-only scope, restart persistence,
