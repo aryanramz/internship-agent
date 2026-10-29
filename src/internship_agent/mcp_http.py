@@ -32,6 +32,7 @@ class AuthConfig:
     owner_subject: str
     client_id: str
     jwks_path: Path
+    public_origin: str | None = None
 
     def __post_init__(self):
         issuer = urlsplit(self.issuer)
@@ -40,7 +41,15 @@ class AuthConfig:
                 issuer.username or issuer.password or issuer.query or issuer.fragment or
                 (issuer.scheme == "http" and issuer.hostname != "127.0.0.1")):
             raise ValueError("Configure an HTTPS issuer or an explicit loopback test issuer")
-        if (resource.scheme != "http" or resource.hostname != "127.0.0.1" or
+        if self.public_origin is not None:
+            from .mcp_gateway_config import public_origin
+            import re
+            origin = public_origin(self.public_origin)
+            if (self.resource != origin + "/mcp" or self.issuer == origin + "/realms/master" or
+                    not self.issuer.startswith(origin + "/realms/") or
+                    not re.fullmatch(r"/realms/[a-z][a-z0-9-]{0,62}", issuer.path)):
+                raise ValueError("Public resource and issuer must share the configured dedicated HTTPS origin")
+        elif (resource.scheme != "http" or resource.hostname != "127.0.0.1" or
                 not resource.port or resource.path != "/mcp" or resource.query or resource.fragment or
                 resource.netloc != f"127.0.0.1:{resource.port}"):
             raise ValueError("This proof of concept only accepts http://127.0.0.1:PORT/mcp")
@@ -116,6 +125,8 @@ class JWTVerifier(TokenVerifier):
             scopes = claims["scope"].split()
             if READ_SCOPE not in scopes:
                 return None
+            if cfg.public_origin is not None and set(scopes) - {"openid", "email", "profile", READ_SCOPE}:
+                return None
             return AccessToken(token=token, client_id=cfg.client_id, subject=cfg.owner_subject,
                 scopes=scopes, expires_at=claims["exp"], resource=cfg.resource, claims={"iss": cfg.issuer})
         except (jwt.PyJWTError, ValueError, TypeError, KeyError, OverflowError):
@@ -137,6 +148,19 @@ class InvocationGuard:
             if await self.verifier.verify_token(token) is None:
                 raise MCPError(-32001, "Authorization required")
         return await call_next(ctx)
+
+
+class OAuthToolMetadata:
+    """Publish canonical OAuth tool descriptors and retain the SDK meta mirror."""
+
+    async def __call__(self, ctx, call_next):
+        result = await call_next(ctx)
+        if ctx.method == "tools/list":
+            data = result.model_dump(mode="json", by_alias=True) if hasattr(result, "model_dump") else result
+            for tool in data.get("tools", []):
+                tool["securitySchemes"] = [{"type": "oauth2", "scopes": [READ_SCOPE]}]
+            return data
+        return result
 
 
 class LocalBoundary:
@@ -173,11 +197,11 @@ def create_http_app(data_root: str | Path, profile_path: str | Path, config: Aut
     server = create_server(data_root, profile_path, token_verifier=verifier,
         auth=AuthSettings(issuer_url=AnyHttpUrl(config.issuer), resource_server_url=AnyHttpUrl(config.resource),
                           required_scopes=[READ_SCOPE], validate_token_resource=True),
-        middleware=[InvocationGuard(verifier)])
+        middleware=[InvocationGuard(verifier), OAuthToolMetadata()])
     parsed = urlsplit(config.resource)
     app = server.streamable_http_app(json_response=True, stateless_http=True, max_request_body_size=65536,
         transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=True,
-            allowed_hosts=[parsed.netloc], allowed_origins=[f"http://{parsed.netloc}"]))
+            allowed_hosts=[parsed.netloc], allowed_origins=[f"{parsed.scheme}://{parsed.netloc}"]))
     return LocalBoundary(app, config.resource)
 
 
@@ -189,6 +213,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         config = AuthConfig.from_file(args.auth_config)
+        if config.public_origin is not None:
+            raise ValueError("Public identity configuration requires the reviewed gateway entry point")
         app = create_http_app(args.data, args.profile, config)
     except Exception:
         parser.exit(2, "Local MCP startup failed. Check the existing database, auth configuration and public JWKS.\n")

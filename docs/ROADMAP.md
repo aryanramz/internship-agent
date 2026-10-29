@@ -38,11 +38,11 @@ approvals or evidence. No additional paid service is required or authorized.
   [PR #7](https://github.com/aryanramz/internship-agent/pull/7) validate local
   read-only MCP stdio/HTTP. [Issue #3](https://github.com/aryanramz/internship-agent/issues/3)
   stays open until an actual authenticated ChatGPT invocation succeeds.
-- [PR #8](https://github.com/aryanramz/internship-agent/pull/8) is **open, unmerged**
-  at this baseline. Its HTTPS-identity gateway, provider/proxy experiments and
-  prepared Windows identity controls are pending review, not merged features.
-  No Funnel or external endpoint is active. Do not copy its code into this
-  documentation PR or merge it as a planning side effect.
+- The subsequent [PR #8 gateway integration](https://github.com/aryanramz/internship-agent/pull/8)
+  includes HTTPS resource identity, exact OAuth routing, synthetic provider/proxy
+  qualification and prepared Windows identity controls. These are code/local
+  proofs, not activated connectivity. See [gateway qualification](MCP_GATEWAY_VALIDATION.md).
+  Funnel, actual ChatGPT invocation and native task qualification remain gated.
 
 ## Development priorities
 

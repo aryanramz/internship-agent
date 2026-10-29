@@ -10,8 +10,8 @@ Local SDK interoperability is tested; a ChatGPT cloud connection is not yet prov
 
 The core CLI is usable without ChatGPT or Google. The local dashboard is planned
 in Issue #16; neither interface depends on completing Issue #3. The
-[capability matrix](CAPABILITIES.md) distinguishes merged local MCP from pending
-[PR #8](https://github.com/aryanramz/internship-agent/pull/8) gateway/startup work.
+[capability matrix](CAPABILITIES.md) distinguishes the original local MCP baseline
+from the included [PR #8 gateway/startup preparation](MCP_EXTERNAL_CONNECTIVITY.md).
 No external endpoint is active; the approved architecture does not authorize
 activation before review and private local qualification.
 
@@ -23,9 +23,13 @@ activation before review and private local qualification.
 2. Review the conditionally approved [zero-cost architecture](MCP_CONNECTION_OPTIONS.md)
    and [OAuth findings](MCP_OAUTH_COMPATIBILITY.md). Keycloak passed the local
    static-client/S256 experiment; offline access remains excluded.
-3. Public HTTPS routing, administration isolation and persistence are pending
-   review/qualification in PR #8 before Funnel activation. Cloud ChatGPT cannot directly reach
-   `localhost` or stdio. No external endpoint is currently configured.
+3. The [Phase 3 gateway](MCP_EXTERNAL_CONNECTIVITY.md) implements narrow HTTPS/OAuth
+   routing on loopback. Its implementation needs review before Funnel activation.
+   Cloud ChatGPT cannot directly reach `localhost` or stdio; no external endpoint
+   has been activated. Use the [Windows controls](MCP_WINDOWS_STARTUP.md) only
+   after reviewed one-time setup.
+   Administration isolation and persistence have local synthetic qualification;
+   real public TLS/ChatGPT and native Windows task recovery remain unqualified.
 4. Prove discovery and a read-only call from the actual account before claiming
    cloud integration. Do not expose approval, preparation, submission recording,
    Google operations, discovery/import or other state-changing tools initially.

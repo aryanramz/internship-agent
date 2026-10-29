@@ -16,6 +16,9 @@ from mcp.client.stdio import StdioServerParameters
 from internship_agent.models import Job, stable_id
 from internship_agent.service import Agent
 
+# Cold Windows SDK imports were measured at 22s before a valid legacy reply.
+# These are interoperability checks, not startup-performance assertions.
+STARTUP_TIMEOUT = 60 if os.name == "nt" else 15
 
 @pytest.fixture
 def fictional_agent(tmp_path):
@@ -44,7 +47,7 @@ def test_importing_adapter_does_not_create_or_open_a_database(tmp_path):
     env=dict(os.environ)
     env["INTERNSHIP_AGENT_DATA"]=str(tmp_path/"must-not-exist")
     proc=subprocess.run([sys.executable,"-c","import internship_agent.mcp_server"],cwd=tmp_path,
-        env=env,capture_output=True,text=True,timeout=15)
+        env=env,capture_output=True,text=True,timeout=STARTUP_TIMEOUT)
     assert proc.returncode==0,proc.stderr
     assert not (tmp_path/"must-not-exist").exists()
 
@@ -69,7 +72,7 @@ def test_real_stdio_initialization_discovery_and_readonly_calls(fictional_agent,
     async def exercise():
         params=StdioServerParameters(command=sys.executable,args=["-m","internship_agent.mcp_server",
             "--data",str(agent.root),"--profile",str(profile)])
-        async with Client(params,mode=mode,read_timeout_seconds=10) as client:
+        async with Client(params,mode=mode,read_timeout_seconds=STARTUP_TIMEOUT) as client:
             assert client.server_info.name == "Internship Agent"
             assert client.server_capabilities.tools is not None
             assert "read-only" in client.instructions
@@ -136,6 +139,6 @@ def test_cli_rejects_http_transport_before_starting_a_server(fictional_agent):
     agent,profile,_=fictional_agent
     factory(agent.root,profile)
     proc=subprocess.run([sys.executable,"-m","internship_agent.mcp_server","--transport","streamable-http"],
-        capture_output=True,text=True,timeout=15)
+        capture_output=True,text=True,timeout=STARTUP_TIMEOUT)
     assert proc.returncode==2
     assert "unrecognized arguments" in proc.stderr

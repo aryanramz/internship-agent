@@ -37,8 +37,8 @@ incremental health/lifecycle; #11 owns structured eligibility. Do not start them
 as incidental scope. Issue #3 is an independent optional-interface track and
 stays open until an actual authenticated ChatGPT invocation succeeds.
 
-At reconciliation PR #8 is unmerged gateway/identity-startup work; do not describe
-its modules or test counts as merged baseline capabilities. Distinguish code,
+This revision includes PR #8's prepared gateway/identity-startup code and local
+qualification. It does not activate Funnel or install services/tasks. Distinguish code,
 offline tests, developer live tests, operator reports and blocked/unexecuted
 checks. No fabricated implementation metrics. Follow `docs/RELEASE_PLAN.md`;
 do not bump versions or claim release completion from historical phase labels.
@@ -50,5 +50,5 @@ do not bump versions or claim release completion from historical phase labels.
 - `scoring.py`: deterministic ranking and eligibility warnings
 - `documents.py`: factual resume/cover-letter drafting
 - `integrations/`: optional Google OAuth, alert parsing, Sheets synchronization
-- `mcp_server.py`: three read-only stdio tools; `mcp_http.py`: authenticated loopback-only PoC; public routing is pending separately in PR #8 and is not activated
+- `mcp_server.py`: three read-only stdio tools; `mcp_http.py`: strict JWT/HTTP adapter; `mcp_gateway*.py`: reviewed-route preparation, still loopback-bound with Funnel activation gated
 - `scripts/demo.py`: safe offline proof of concept

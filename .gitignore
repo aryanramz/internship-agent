@@ -18,6 +18,9 @@ config/sources.json
 config/google-oauth-client.json
 config/mcp-auth.json
 config/mcp-jwks.json
+config/mcp-gateway.json
+config/keycloak.conf
+config/keycloak-realm.json
 .env
 .env.*
 *.db

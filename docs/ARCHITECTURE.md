@@ -8,9 +8,9 @@ usable without ChatGPT, MCP, Google or a model API. The CLI is implemented; the
 lightweight local dashboard is planned. Deterministic processing handles routine
 collection/filtering/scoring; optional AI helps with language and judgment.
 
-The [capability matrix](CAPABILITIES.md) is the merged baseline at
-`3a79f555617453fc68dd51d36a9d1e51eabd2dcc`. [PR #8](https://github.com/aryanramz/internship-agent/pull/8)
-is unmerged gateway/startup work, not part of that baseline. No external MCP
+The [capability matrix](CAPABILITIES.md) records the roadmap baseline and subsequent
+[PR #8 gateway integration](https://github.com/aryanramz/internship-agent/pull/8).
+Gateway/startup code is included in this revision; no external MCP
 endpoint is active. See [roadmap](ROADMAP.md) and [release gates](RELEASE_PLAN.md).
 
 ## Current components
@@ -24,7 +24,7 @@ endpoint is active. See [roadmap](ROADMAP.md) and [release gates](RELEASE_PLAN.m
 | Fit and documents | `scoring.py`: deterministic component scores/keyword warnings; `documents.py`: profile-based DOCX emphasis/drafts, not a claim-verification engine |
 | Local interfaces | `cli.py` for the working pipeline; `tracker.py` for reviewed CSV export; `scripts/run-daily.ps1` is an existing routine runner, not a qualified scheduler |
 | Optional Google | Per-user grants; Gmail read-only lead staging/review; Sheets preview/confirmed mirror synchronization |
-| Optional MCP | Import-safe `mcp_server.py` stdio and authenticated loopback `mcp_http.py`; exactly three read-only tools over an existing SQLite store |
+| Optional MCP | Import-safe stdio, strict JWT/HTTP adapter and prepared `mcp_gateway*.py` route boundary; exactly three read-only tools, loopback only, no activation |
 
 ```mermaid
 flowchart LR
@@ -105,7 +105,13 @@ failure recovery and repeat actions before any browser assistant depends on it.
   ingestion, document, approval or submission tool. The HTTP adapter retains
   pinned signature/issuer/single-audience/expiry/scope/client/owner checks per call.
 - Public connectivity uses the separately approved Tailscale Personal/Funnel +
-  local Keycloak architecture, with qualifications tracked in #3 and pending PR #8.
+  local Keycloak architecture. The [Phase 3 gateway](MCP_EXTERNAL_CONNECTIVITY.md)
+  adds canonical HTTPS identity and exact OAuth/login/asset routing while binding
+  only loopback; token checks and the three read-only tools remain unchanged.
+  It has no admin/master/account/management, Google, write or arbitrary-file route.
+  The factory remains import-safe and never initializes a database. Google error
+  diagnostics and metadata-only sync audit do not expose raw API/OAuth payloads.
+  Qualifications are tracked in #3 and [gateway evidence](MCP_GATEWAY_VALIDATION.md).
   Local provider success is not actual ChatGPT sign-in/refresh proof. No exposure,
   billing, payment method or paid resource is authorized by this documentation.
   See [OAuth evidence](MCP_OAUTH_COMPATIBILITY.md) and [connection boundaries](INTEGRATION.md).

@@ -10,7 +10,7 @@ infrastructure is authorized. This work created none of those resources.
 Reconciliation note, 2026-10-29: the operator selected the Tailscale
 Personal/Funnel + local Keycloak architecture. Merged PR #7 qualified local
 authenticated HTTP; [PR #8](https://github.com/aryanramz/internship-agent/pull/8)
-contains gateway/startup work and is still unmerged. The options below preserve
+contains the gateway/startup code included in this integration revision. The options below preserve
 the research record, not a claim of active connectivity. Actual ChatGPT invocation
 remains Issue #3 on an independent track; see the [master roadmap](ROADMAP.md).
 
@@ -55,11 +55,11 @@ flowchart LR
 ```
 
 The [authenticated HTTP adapter](MCP_HTTP_VALIDATION.md) is now implemented for
-loopback only, preserving the existing three tools. Its configuration explicitly
-rejects public resource URLs. The [OAuth comparison](MCP_OAUTH_COMPATIBILITY.md)
-records provider experiments and limitations. A future reviewed change must add
-an exact external route allowlist and qualify it locally before Funnel activation
-or connection in the operator's ChatGPT account.
+loopback only, preserving the existing three tools. The [Phase 3 gateway](MCP_EXTERNAL_CONNECTIVITY.md)
+now adds explicit HTTPS identity and an exact OAuth route allowlist without
+starting Funnel. The [OAuth comparison](MCP_OAUTH_COMPATIBILITY.md) records provider
+limitations. Review and local qualification precede any Funnel activation or
+connection in the operator's ChatGPT account.
 
 ## Authentication and data boundaries
 
@@ -116,8 +116,9 @@ need maintenance. [Funnel persistence](https://tailscale.com/docs/reference/tail
 ## Approval and acceptance gate
 
 The operator selected **Personal Funnel + local Keycloak + read-only MCP**.
-Pending PR #8 review and local authentication/routing/startup qualification
-precede a separately authorized exposure decision. No private credentials are
+Code review and local authentication/routing/startup qualification precede a
+separately authorized exposure decision. Merging PR #8 does not authorize
+activation or installation of its runtime dependencies. No private credentials are
 requested. External-stage acceptance must
 prove discovery/calls from the actual ChatGPT account, rejection of missing,
 forged, expired and wrong-audience tokens, owner-only scope, restart persistence,

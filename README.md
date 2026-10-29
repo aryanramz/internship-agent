@@ -20,8 +20,8 @@ facts or authorizing submissions and recruiter messages.
 Greenhouse has [one-board live validation](docs/LIVE_ATS_VALIDATION.md), Sheets has
 [operator-reported synthetic live results](docs/SHEETS_VALIDATION.md), and local
 MCP stdio/HTTP is validated. Actual authenticated ChatGPT invocation is pending.
-[PR #8](https://github.com/aryanramz/internship-agent/pull/8) gateway work is
-unmerged; no public endpoint is active. There is **no automatic application
+[PR #8's prepared gateway](docs/MCP_EXTERNAL_CONNECTIVITY.md) is included;
+no public endpoint is active. There is **no automatic application
 submission or recruiter emailing**. See the [capability matrix](docs/CAPABILITIES.md).
 
 ## Features
@@ -34,7 +34,7 @@ submission or recruiter emailing**. See the [capability matrix](docs/CAPABILITIE
 | Documents | Single-column DOCX resume and cover-letter draft from a verified profile | No guarantee of passing ATS; requires human review |
 | Tracking | SQLite status ledger with audit events and explicit approval step | Records confirmation evidence; doesn't independently verify submission |
 | Google | Gmail lead staging; exact Sheets previews, confirmed sync and local audit | Basic synthetic Sheets sync live-tested by operator; Gmail and broader scenarios remain unqualified |
-| MCP | Validated read-only stdio tools and an authenticated loopback HTTP proof of concept | [Local HTTP checks](docs/MCP_HTTP_VALIDATION.md); external routing and actual ChatGPT invocation remain unqualified |
+| MCP | Read-only stdio/HTTP tools and a narrow OAuth gateway with HTTPS resource identity | [Gateway qualification](docs/MCP_EXTERNAL_CONNECTIVITY.md); Funnel remains disabled and actual ChatGPT invocation is pending |
 
 ## Quickstart (Windows, Python 3.11+)
 
@@ -75,7 +75,7 @@ development does not wait for it. Install the optional MCP extra with
 [validated locally](docs/MCP_VALIDATION.md). The operator confirmed custom MCP
 controls in Plus, but actual cloud invocation is **not proven**. Issue #3 remains
 open. The approved [zero-additional-cost architecture](docs/MCP_CONNECTION_OPTIONS.md)
-has pending gateway work in PR #8; activation still requires review and separate
+has a prepared loopback gateway; activation still requires local qualification and separate
 authorization. See [integration options](docs/INTEGRATION.md).
 
 ChatGPT can independently work with connected Google Sheets and Gmail for user-approved workflows without a direct MCP connection; that is **not** equivalent to executing the local backend. A standalone script cannot use a ChatGPT subscription as an unmetered model API.
@@ -127,8 +127,10 @@ The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operat
 
 Named R1–R7 gates have proposed versions 0.5.0–0.10.0 only after acceptance;
 cloud assessment has no promised version. [The master roadmap](docs/ROADMAP.md)
-links issues/dependencies. This reconciliation changes no backend behavior and
-publishes no release. No additional paid service, API credits or infrastructure
+links issues/dependencies. The [prepared gateway](docs/MCP_EXTERNAL_CONNECTIVITY.md)
+and [its local qualification](docs/MCP_GATEWAY_VALIDATION.md) preserve the three
+read-only tools; actual authenticated ChatGPT invocation remains pending.
+No release is published. No additional paid service, API credits or infrastructure
 is required or enabled.
 
 ## Privacy and license
