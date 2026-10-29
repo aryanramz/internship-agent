@@ -10,12 +10,15 @@ Local SDK interoperability is tested; a ChatGPT cloud connection is not yet prov
 
 ## Available custom MCP connection
 
-1. Follow [local validation](MCP_VALIDATION.md): the entry point is stdio only,
-   with `application_summary`, `rank_jobs` and `preview_application`.
-2. Review the [zero-cost connection proposal](MCP_CONNECTION_OPTIONS.md). Stop for
-   architecture approval before implementing an HTTP/OAuth endpoint or tunnel.
-3. After approval, validate authentication on loopback before enabling external
-   transport. Cloud ChatGPT cannot directly reach `localhost` or stdio.
+1. Follow [local stdio validation](MCP_VALIDATION.md) or the separately implemented
+   [authenticated loopback HTTP checks](MCP_HTTP_VALIDATION.md). Both preserve
+   `application_summary`, `rank_jobs` and `preview_application`.
+2. Review the conditionally approved [zero-cost architecture](MCP_CONNECTION_OPTIONS.md)
+   and [OAuth findings](MCP_OAUTH_COMPATIBILITY.md). Keycloak passed the local
+   static-client/S256 experiment; offline access remains excluded.
+3. Public HTTPS routing, administration isolation and persistence need a separate
+   reviewed stage before Funnel activation. Cloud ChatGPT cannot directly reach
+   `localhost` or stdio. No external endpoint is currently configured.
 4. Prove discovery and a read-only call from the actual account before claiming
    cloud integration. Do not expose approval, preparation, submission recording,
    Google operations, discovery/import or other state-changing tools initially.

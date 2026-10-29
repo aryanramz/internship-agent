@@ -22,8 +22,9 @@ If tools cannot be accessed in a ChatGPT session because of plan/host restrictio
 
 ## Connection boundary
 
-- Account controls were confirmed by the operator; cloud connectivity is still
-  pending architecture approval and an actual authenticated ChatGPT call.
-- The local entry point is stdio only. No public unauthenticated endpoint is allowed.
+- Account controls were confirmed by the operator; the staged architecture is
+  conditionally approved. An actual authenticated ChatGPT call is still required.
+- Stdio and the authenticated loopback HTTP proof of concept expose the same
+  three tools. Public routing is not configured; no unauthenticated exposure is allowed.
 - Never enable billing, buy credits or provision paid/metered resources. Use the
   [documented zero-cost proposal](MCP_CONNECTION_OPTIONS.md) or local fallback.
