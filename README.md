@@ -1,10 +1,28 @@
 # Internship Agent
 
-**Local-first internship discovery, job-fit ranking, and application preparation — designed for AI-assisted workflows.**
+**An open-source, local-first, ChatGPT-oriented internship workflow platform.**
 
-Internship Agent is an open-source Python project that combines employer job-board readers, an explainable matching engine, a SQLite application ledger, optional Google Workspace integrations, and an MCP tool interface. It's intended for students who want a disciplined, inspectable internship pipeline rather than a bulk-apply bot.
+Internship Agent combines Python employer job-board readers, explainable ranking,
+profile-based documents and a SQLite application ledger. The target workflow adds
+continuous discovery, structured internship eligibility, verified application
+materials, approved application assistance and recruiting outcome tracking.
+Those additions have explicit [development gates](docs/ROADMAP.md).
 
-**Project status: v0.4.0 — working local prototype, not production-ready.** Most automated tests are offline/mocked. Greenhouse discovery has [live validation](docs/LIVE_ATS_VALIDATION.md), and basic synthetic Sheets synchronization has [operator-reported live results](docs/SHEETS_VALIDATION.md). Other provider endpoints, Gmail and MCP connections still need live validation. There is **no automatic job application submission or recruiter emailing**.
+The local CLI works independently of ChatGPT. ChatGPT Chat/Work is the preferred
+intelligent interface where supported; authenticated MCP and Google integrations
+are optional. A lightweight local dashboard is planned. Deterministic processing
+handles routine work; optional AI assists language/judgment without inventing
+facts or authorizing submissions and recruiter messages.
+
+**Status: working local prototype, not production-ready.** Package metadata is
+0.4.0; runtime version drift and the proposed release sequence are documented in
+[the release plan](docs/RELEASE_PLAN.md). Most tests are offline/mocked.
+Greenhouse has [one-board live validation](docs/LIVE_ATS_VALIDATION.md), Sheets has
+[operator-reported synthetic live results](docs/SHEETS_VALIDATION.md), and local
+MCP stdio/HTTP is validated. Actual authenticated ChatGPT invocation is pending.
+[PR #8's prepared gateway](docs/MCP_EXTERNAL_CONNECTIVITY.md) is included;
+no public endpoint is active. There is **no automatic application
+submission or recruiter emailing**. See the [capability matrix](docs/CAPABILITIES.md).
 
 ## Features
 
@@ -51,7 +69,14 @@ python -m pytest -q
 
 ## ChatGPT and Work integration
 
-The primary interface is intended to be ChatGPT Chat/Work; the backend offers a read-only stdio MCP adapter and a local CLI. Install the optional MCP extra with `python -m pip install -e '.[mcp]'`. SDK 2.3.0 initialization/discovery and tool calls are [validated locally](docs/MCP_VALIDATION.md). The operator has confirmed custom MCP controls in Plus, but cloud access is **not yet configured**. Review the [zero-additional-cost architecture proposal](docs/MCP_CONNECTION_OPTIONS.md); no external endpoint or tunnel is implemented before approval. See [integration options](docs/INTEGRATION.md).
+ChatGPT Chat/Work is preferred when a supported connection exists; essential local
+development does not wait for it. Install the optional MCP extra with
+`python -m pip install -e '.[mcp]'`. SDK 2.3.0 calls are
+[validated locally](docs/MCP_VALIDATION.md). The operator confirmed custom MCP
+controls in Plus, but actual cloud invocation is **not proven**. Issue #3 remains
+open. The approved [zero-additional-cost architecture](docs/MCP_CONNECTION_OPTIONS.md)
+has a prepared loopback gateway; activation still requires local qualification and separate
+authorization. See [integration options](docs/INTEGRATION.md).
 
 ChatGPT can independently work with connected Google Sheets and Gmail for user-approved workflows without a direct MCP connection; that is **not** equivalent to executing the local backend. A standalone script cannot use a ChatGPT subscription as an unmetered model API.
 
@@ -71,7 +96,7 @@ flowchart TD
     A --> W[Externally completed application + evidence]
     W --> DB
     DB --> G[Optional Google Sheets reconciliation]
-    M[Optional local MCP interface] <--> DB
+    M[Optional local MCP interface] -->|Read only| DB
     C[ChatGPT Chat / Work] -. permitted tool access only .-> M
 ```
 
@@ -85,7 +110,7 @@ python scripts/check_repo_hygiene.py
 python -m compileall -q src
 ```
 
-[Architecture](docs/ARCHITECTURE.md) · [Threat model](docs/THREAT_MODEL.md) · [Source coverage](docs/SOURCE_MATRIX.md) · [Roadmap](docs/ROADMAP.md) · [Demo walkthrough](docs/DEMO.md) · [Portfolio notes](docs/PORTFOLIO.md) · [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md)
+[Architecture](docs/ARCHITECTURE.md) · [Capability matrix](docs/CAPABILITIES.md) · [Threat model](docs/THREAT_MODEL.md) · [Source coverage](docs/SOURCE_MATRIX.md) · [Master roadmap](docs/ROADMAP.md) · [Release gates](docs/RELEASE_PLAN.md) · [Demo](docs/DEMO.md) · [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md)
 
 GitHub Actions runs tests across supported Python versions and checks for common accidental private-file commits. The file-checker is not a substitute for full secret scanning or security review.
 
@@ -93,10 +118,20 @@ The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operat
 
 ## Roadmap
 
-- **v0.4 (current):** public repo hygiene, synthetic offline demonstration, CI, documented tradeoffs and release artifacts.
-- **v0.5:** Greenhouse public discovery validated; basic synthetic Sheets OAuth, confirmed append and repeat no-op operator-validated. New credential routing has a focused read-only local follow-up.
-- **v0.6:** read-only MCP and a narrow HTTPS/OAuth gateway implemented; [Phase 3 qualification](docs/MCP_EXTERNAL_CONNECTIVITY.md) precedes any reviewed Funnel activation. An actual authenticated ChatGPT call is still required. Tailoring/format QA remains future work.
-- **Future:** approved, platform-compliant application assistance; recruiter outreach drafts and confirmation monitoring.
+1. Multi-provider ATS validation and employer registry, then incremental scans,
+   health and conservative posting lifecycle ([next PR](docs/NEXT_ENGINEERING_PR.md)).
+2. Verified profile/eligibility, explainable ranking and document QA.
+3. Recoverable local preparation/tracking, then Windows scheduling and dashboard.
+4. Optional ChatGPT qualification in parallel; approved browser assistance next.
+5. Verified recruiter workflows and analytics; optional cloud assessment last.
+
+Named R1–R7 gates have proposed versions 0.5.0–0.10.0 only after acceptance;
+cloud assessment has no promised version. [The master roadmap](docs/ROADMAP.md)
+links issues/dependencies. The [prepared gateway](docs/MCP_EXTERNAL_CONNECTIVITY.md)
+and [its local qualification](docs/MCP_GATEWAY_VALIDATION.md) preserve the three
+read-only tools; actual authenticated ChatGPT invocation remains pending.
+No release is published. No additional paid service, API credits or infrastructure
+is required or enabled.
 
 ## Privacy and license
 

@@ -4,10 +4,13 @@ The project follows pre-1.0 semantic versioning. Earlier releases are preserved 
 
 ## Unreleased
 
+- Integrated the prepared loopback HTTPS-identity/OAuth gateway and Windows controls with the revised master roadmap. Preserved strict owner/resource JWT checks, three read-only tools, browser cookie isolation and all local-only activation gates; no services, endpoints or dependencies were installed by merging code.
+- Reconciled the master architecture/roadmap against merged `develop`, live evidence and open PR #8; added a component matrix, dependency-aware issues, release acceptance/versioning policy and precise next ATS/registry PR scope. No backend behavior, version, release or endpoint activation changed.
+- Corrected stale MCP import-tool documentation, recorded the operator's final Sheets credential-reuse preview, and kept pending ChatGPT qualification separate from completed local MCP work.
 - Validated MCP SDK 2.3.0 stdio discovery/invocation with modern and legacy protocol negotiation using separate fictional records.
 - Restricted the initial MCP registry to read-only summaries, rankings and previews; added actual read-only SQLite access and removed import-time database creation and HTTP startup.
 - Added typed structured results, bounded inputs, sanitized tool errors and minimal preview output; write/Google/file tools remain unavailable in MCP.
-- Documented zero-cost ChatGPT connectivity options and a Tailscale Personal/Funnel plus local OAuth proposal; external endpoint implementation awaits approval.
+- Documented zero-cost ChatGPT connectivity options and the Tailscale Personal/Funnel plus local OAuth architecture. Gateway/startup implementation is pending in PR #8; no external endpoint is activated.
 - Added exact Sheets previews, metadata-only local audit and an opt-in synthetic tracker runner; recorded operator-reported successful basic live OAuth/write/idempotency checks.
 - Decoupled Google credentials from the database with private per-user defaults, explicit overrides and nondestructive legacy-token adoption.
 - Replaced raw Sheets failures with actionable authorization, worksheet, sharing and request messages; uncertain writes direct the operator back to preview.
