@@ -53,7 +53,7 @@ def test_live_ingestion_and_repeat_preserves_history(tmp_path, monkeypatch, prov
     config = tmp_path / "boards.json"
     config.write_text(json.dumps({"boards": [board]}), encoding="utf-8")
     agent = Agent(str(tmp_path / "ledger"))
-    first = agent.discover(str(config))
+    first = agent.discover(str(config), refresh=True)
     assert not first["errors"], first["errors"]
     assert first["added"] >= 2, "Public board needs two postings to qualify both preparation states"
     rows = agent.store.list_jobs(10000)
@@ -79,7 +79,7 @@ def test_live_ingestion_and_repeat_preserves_history(tmp_path, monkeypatch, prov
     with agent.store.connection() as connection:
         before_events = [tuple(row) for row in connection.execute("SELECT * FROM events ORDER BY id")]
     time.sleep(1)  # Two serial requests; no retries or redirects.
-    second = agent.discover(str(config))
+    second = agent.discover(str(config), refresh=True)
     assert not second["errors"], second["errors"]
     assert second["added"] == 0 and second["updated"] == first["added"], "Board changed; inspect without blind reruns"
     assert {row["id"] for row in agent.store.list_jobs(10000)} == original_ids

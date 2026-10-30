@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import sqlite3
 from pathlib import Path
 from .service import Agent
 
@@ -12,6 +13,14 @@ def main():
     p.add_argument("--credentials-dir",default=None,help="Private Google credential directory (independent of --data)")
     cmds=p.add_subparsers(dest="command",required=True)
     a=cmds.add_parser("discover");a.add_argument("--sources",default="config/sources.json")
+    a.add_argument("--refresh",action="store_true",help="Bypass healthy cooldown only; never bypass retry restrictions")
+    a.add_argument("--max-pages",type=int,default=3,help="1–5 pages per source per invocation")
+    a.add_argument("--max-sources",type=int,default=20,help="1–100 eligible sources per invocation")
+    for name in ("source-health", "scans", "availability"):
+        report=cmds.add_parser(name,help="Inspect local discovery evidence without network or database writes")
+        report.add_argument("--limit",type=int,default=100)
+        if name=="availability":
+            report.add_argument("--job-id",default=None)
     a=cmds.add_parser("rank");a.add_argument("--profile",default="config/profile.json");a.add_argument("--min-score",type=int,default=0);a.add_argument("--limit",type=int,default=25)
     a=cmds.add_parser("preview");a.add_argument("job_id");a.add_argument("--profile",default="config/profile.json")
     a=cmds.add_parser("prepare");a.add_argument("job_id");a.add_argument("--profile",default="config/profile.json")
@@ -70,6 +79,21 @@ def main():
         except (ValueError,OSError):
             p.exit(2,"Error: source registration or configuration is invalid; check the local registry and public board URL.\n")
         return
+    if args.command in {"source-health", "scans", "availability"}:
+        from .discovery_state import DiscoveryState
+        try:
+            agent=Agent(args.data,read_only=True)
+            state=DiscoveryState(agent.store, clock=agent.clock)
+            if args.command=="source-health":
+                result=state.health(agent.clock(), args.limit)
+            elif args.command=="scans":
+                result=state.scans(args.limit)
+            else:
+                result=state.availability(args.job_id,args.limit)
+            print(json.dumps(result,indent=2,ensure_ascii=False))
+        except (ValueError,OSError,sqlite3.Error):
+            p.exit(2,"Error: discovery reports require an existing compatible local database.\n")
+        return
     agent=Agent(args.data,credentials_dir=args.credentials_dir)
     try:
         if args.command=="google-login":
@@ -82,7 +106,7 @@ def main():
             result=agent.handle_alert(args.lead_id,args.action,args.company,args.title,args.location,args.url,args.description)
         elif args.command=="sync-sheet":
             result=agent.sync_tracker(args.spreadsheet_id,args.apply,args.confirm)
-        elif args.command=="discover": result=agent.discover(args.sources)
+        elif args.command=="discover": result=agent.discover(args.sources,refresh=args.refresh,max_pages=args.max_pages,max_sources=args.max_sources)
         elif args.command=="providers":
             from .sources import PUBLIC_BOARDS, AGGREGATORS, LOCAL_IMPORTS
             result={"public_company_boards":sorted(PUBLIC_BOARDS),"aggregators":sorted(AGGREGATORS),

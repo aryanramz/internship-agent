@@ -1,12 +1,14 @@
-# Issue #9 implemented scope and next-engineering handoff
+# Discovery engineering and next-engineering handoff
 
 [Issue #9](https://github.com/aryanramz/internship-agent/issues/9), gate R1 Part 1,
 is implemented in the ATS/registry work session; [live evidence](LIVE_ATS_VALIDATION.md)
 and [registry compatibility](EMPLOYER_REGISTRY.md) record its acceptance.
-The contract below is retained for review/history. The next engineering scope is
-[Issue #10](https://github.com/aryanramz/internship-agent/issues/10): incremental
-discovery/checkpoints, source health/backoff and conservative posting lifecycle.
-No Issue #10 feature is implemented by Issue #9; start a separate reviewed branch.
+The contract below is retained for review/history. Issue #10 subsequently adds
+[incremental discovery/checkpoints, health/backoff and conservative posting evidence](DISCOVERY_LIFECYCLE.md).
+After its acceptance the next engineering scope is
+[Issue #11](https://github.com/aryanramz/internship-agent/issues/11): structured
+verified candidate facts and eligibility. Start a separate reviewed branch;
+eligibility/ranking/document changes are not incidental discovery work.
 
 ## Objective
 

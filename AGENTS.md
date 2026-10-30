@@ -32,8 +32,9 @@ grant authorization or establish evidence of an external application.
 ## Roadmap execution and evidence
 
 Issue #9 implements Greenhouse/Lever/Ashby validation and the compatible employer
-registry. The next engineering scope after acceptance is Issue #10; see
-`docs/NEXT_ENGINEERING_PR.md`. #10 owns incremental health/lifecycle; #11 owns
+registry. Issue #10 adds durable incremental health/lifecycle; see
+`docs/DISCOVERY_LIFECYCLE.md`. The next engineering scope after acceptance is #11,
+which owns
 structured eligibility. Do not start them as incidental scope. Issue #3 is an independent optional-interface track and
 stays open until an actual authenticated ChatGPT invocation succeeds.
 
@@ -47,6 +48,7 @@ do not bump versions or claim release completion from historical phase labels.
 
 - `sources.py` / `source_detection.py`: approved discovery and normalization
 - `registry.py`: compatible employer/source JSON, explicit no-fetch registration and inspection; never a second application ledger
+- `discovery_types.py` / `discovery_state.py`: bounded pages, additive migration, fenced recovery, durable retry rules and independent posting evidence; never application outcomes
 - `models.py` / `store.py`: durable job and application state
 - `scoring.py`: deterministic ranking and eligibility warnings
 - `documents.py`: factual resume/cover-letter drafting

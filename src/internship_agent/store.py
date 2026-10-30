@@ -51,7 +51,11 @@ class Store:
             return
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connection() as c:
+            if c.execute("PRAGMA user_version").fetchone()[0] > 1:
+                raise ValueError("Database schema is newer than this application supports")
             c.executescript(SCHEMA)
+            from .discovery_state import migrate
+            migrate(c)
 
     @contextmanager
     def connection(self):
@@ -77,20 +81,15 @@ class Store:
                      (jid, kind, json.dumps(payload, sort_keys=True), now_iso()))
 
     def upsert_job(self, job: Job) -> str:
-        """Dedup exact posting URLs; never collapse same-title different requisitions."""
-        url = canonical_url(job.job_url)
+        """Dedup posting identity; shared URLs remain reviewable separate records."""
         with self.connection() as c:
-            r = c.execute("SELECT id,description,compensation FROM jobs WHERE canonical_url=?", (url,)).fetchone()
-            if r and r["id"] != job.id:
-                # Enrich a shared employer URL with the richer direct ATS details.
-                # Never change application status or create a second requisition.
-                description = job.description if len(job.description) > len(r["description"]) else r["description"]
-                compensation = r["compensation"] or job.compensation
-                c.execute("UPDATE jobs SET description=?,compensation=?,last_seen_at=? WHERE id=?",
-                          (description,compensation,now_iso(),r["id"]))
-                return "duplicate"
-            existing = c.execute("SELECT id FROM jobs WHERE id=?", (job.id,)).fetchone()
-            c.execute("""INSERT INTO jobs(id,provider,company,source_id,title,location,description,job_url,canonical_url,apply_url,work_mode,published_at,compensation,discovered_at,last_seen_at)
+            return self._upsert_job(c, job)
+
+    def _upsert_job(self, c, job: Job) -> str:
+        """Share one transaction with source evidence and its durable checkpoint."""
+        url = canonical_url(job.job_url)
+        existing = c.execute("SELECT id FROM jobs WHERE id=?", (job.id,)).fetchone()
+        c.execute("""INSERT INTO jobs(id,provider,company,source_id,title,location,description,job_url,canonical_url,apply_url,work_mode,published_at,compensation,discovered_at,last_seen_at)
                          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                          ON CONFLICT(id) DO UPDATE SET title=excluded.title, location=excluded.location,
                          description=excluded.description, job_url=excluded.job_url,
@@ -100,11 +99,11 @@ class Store:
                       (job.id,job.provider,job.company,job.source_id,job.title,job.location,job.description,
                        job.job_url,url,job.apply_url,job.work_mode,job.published_at,job.compensation,
                        job.discovered_at or now_iso(),now_iso()))
-            if not existing:
-                c.execute("INSERT INTO applications(job_id,status,updated_at) VALUES(?,?,?)",(job.id,"discovered",now_iso()))
-                self.event(c,job.id,"discovered",{"provider":job.provider,"url":job.job_url})
-                return "added"
-            return "updated"
+        if not existing:
+            c.execute("INSERT INTO applications(job_id,status,updated_at) VALUES(?,?,?)",(job.id,"discovered",now_iso()))
+            self.event(c,job.id,"discovered",{"provider":job.provider,"url":job.job_url})
+            return "added"
+        return "updated"
 
     def list_jobs(self, limit: int = 100) -> list[dict]:
         with self.connection() as c:

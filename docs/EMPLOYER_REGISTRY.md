@@ -54,8 +54,9 @@ Validation fields are operator-maintained evidence notes, not a cryptographic
 attestation or permission to bypass the reader. Record the actual dated endpoint,
 result and limitations locally after qualification; do not paste raw responses,
 contact details, credentials or personal application information into the note.
-Discovery does not automatically promote a source to passed, nor maintain a scan
-health history. That is separate from Issue #10.
+Discovery does not automatically promote registry validation to passed. Issue #10
+maintains separate SQLite [scan health/evidence](DISCOVERY_LIFECYCLE.md), without
+rewriting private source configuration.
 
 ## Identity, duplicates and compatibility
 
@@ -78,7 +79,8 @@ health history. That is separate from Issue #10.
   the original intact and cleans its temporary file. POSIX temporary files use
   private permissions; Windows relies on the local account's filesystem ACLs.
 - This is single-writer local configuration. Simultaneous editors can still race;
-  there is no lock, scheduler, source-health timeline or incremental scan engine.
+  there is no registry-file lock. SQLite discovery leases/checkpoints do not lock
+  this JSON file. No unattended scheduler is installed.
 
 See [live qualification](LIVE_ATS_VALIDATION.md), [source coverage](SOURCE_MATRIX.md)
 and the [master roadmap](ROADMAP.md).

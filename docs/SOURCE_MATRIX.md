@@ -8,8 +8,9 @@ The other 15 source types remain locally/synthetically covered, not live-qualifi
 `add-source`/`suggest-sources` retain explicit no-fetch registration and detection,
 now backed by the compatible [employer registry](EMPLOYER_REGISTRY.md). This is not
 a general crawler or global employer index.
-[Issue #10](https://github.com/aryanramz/internship-agent/issues/10) adds health,
-incremental scans and posting lifecycle. See [capability evidence](CAPABILITIES.md).
+[Issue #10](https://github.com/aryanramz/internship-agent/issues/10) adds durable health,
+bounded incremental scans and [posting evidence](DISCOVERY_LIFECYCLE.md). This adds
+no new live-provider qualification. See [capability evidence](CAPABILITIES.md).
 
 ## Implemented readers — 18 source types
 
@@ -18,7 +19,7 @@ incremental scans and posting lifecycle. See [capability evidence](CAPABILITIES.
 | Company ATS | Greenhouse | Company board slug | [Live validated](LIVE_ATS_VALIDATION.md) on one public board; other/legacy boards may differ |
 | Company ATS | Lever | Company slug | Live-qualified on one public board; closing content retained; publication date unknown |
 | Company ATS | Ashby | Company slug | Live-qualified on one public board; publishedAt is last published, not original creation |
-| Company ATS | SmartRecruiters | Company identifier | Public Posting API; first 500 posts; list details may be sparse |
+| Company ATS | SmartRecruiters | Company identifier | Discovery uses bounded resumable offset pages; list details may be sparse; no authoritative absence/closure policy or live qualification |
 | Company ATS | Workable | Account slug | Public widget endpoint; one record per shortcode; rate limits |
 | Company ATS | Breezy HR | Subdomain | Public board JSON; descriptions not included in index |
 | Company ATS | Personio | Subdomain, de/com domain | Public XML must be enabled by employer |

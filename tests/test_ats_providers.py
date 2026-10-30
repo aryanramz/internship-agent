@@ -93,7 +93,7 @@ def history(agent):
 def test_replay_retains_descriptions_dates_and_distinct_requisitions(monkeypatch, discovery):
     provider, agent, config, _ = discovery
     replay(monkeypatch, [ok(snapshot(provider))])
-    result = agent.discover(str(config))
+    result = agent.discover(str(config), refresh=True)
     assert result["errors"] == []
     assert result["added"] == 2
     rows = agent.store.list_jobs()
@@ -115,14 +115,14 @@ def test_replay_retains_descriptions_dates_and_distinct_requisitions(monkeypatch
 def test_repeat_preserves_prepared_approved_and_events(monkeypatch, discovery):
     provider, agent, config, _ = discovery
     replay(monkeypatch, [ok(snapshot(provider)), ok(snapshot(provider))])
-    assert agent.discover(str(config))["added"] == 2
+    assert agent.discover(str(config), refresh=True)["added"] == 2
     ids = sorted(row["id"] for row in agent.store.list_jobs())
     for jid in ids:
         agent.store.set_prepared(jid, "fictional-resume.docx", "fictional-letter.docx")
     agent.store.approve(ids[1], f"APPROVE {ids[1]}")
     before = history(agent)
     approved_at = agent.store.get_job(ids[1])["approved_at"]
-    result = agent.discover(str(config))
+    result = agent.discover(str(config), refresh=True)
     assert (result["added"], result["updated"], result["duplicate"], result["errors"]) == (0, 2, 0, [])
     assert sorted(row["id"] for row in agent.store.list_jobs()) == ids
     assert agent.store.get_job(ids[0])["status"] == "prepared"
@@ -136,7 +136,7 @@ def test_repeat_preserves_prepared_approved_and_events(monkeypatch, discovery):
 def test_valid_empty_response_is_success(monkeypatch, discovery):
     provider, agent, config, _ = discovery
     replay(monkeypatch, [ok([] if provider == "lever" else {"jobs": []})])
-    result = agent.discover(str(config))
+    result = agent.discover(str(config), refresh=True)
     assert result["errors"] == []
     assert result["by_source"][0]["retrieved"] == 0
     assert agent.store.list_jobs() == []
@@ -146,7 +146,7 @@ def test_valid_empty_response_is_success(monkeypatch, discovery):
 def test_invalid_schema_is_not_empty_success(monkeypatch, discovery, bad):
     _, agent, config, _ = discovery
     replay(monkeypatch, [ok(bad)])
-    result = agent.discover(str(config))
+    result = agent.discover(str(config), refresh=True)
     assert result["errors"][0]["code"] == "invalid_payload"
     assert "private" not in json.dumps(result)
     assert result["by_source"] == []
@@ -158,7 +158,7 @@ def test_nonobject_item_fails_entire_board(monkeypatch, discovery, bad):
     data = snapshot(provider)
     items(provider, data)[1] = bad
     replay(monkeypatch, [ok(data)])
-    result = agent.discover(str(config))
+    result = agent.discover(str(config), refresh=True)
     assert result["errors"][0]["code"] == "invalid_payload"
     assert agent.store.list_jobs() == []
 
@@ -181,7 +181,7 @@ def test_invalid_fields_abort_without_partial_ingestion(monkeypatch, discovery, 
     data = snapshot(provider)
     items(provider, data)[1][mapping[provider][field]] = value
     replay(monkeypatch, [ok(data)])
-    result = agent.discover(str(config))
+    result = agent.discover(str(config), refresh=True)
     assert result["errors"][0]["code"] == "invalid_posting"
     assert "private" not in json.dumps(result)
     assert agent.store.list_jobs() == []
@@ -194,7 +194,7 @@ def test_invalid_apply_url_aborts_without_partial_ingestion(monkeypatch, discove
     data = snapshot(provider)
     items(provider, data)[1]["applyUrl"] = value
     replay(monkeypatch, [ok(data)])
-    result = agent.discover(str(config))
+    result = agent.discover(str(config), refresh=True)
     assert result["errors"][0]["code"] == "invalid_posting"
     assert agent.store.list_jobs() == []
 
@@ -257,7 +257,7 @@ def test_ats_links_reject_short_numeric_hosts(provider, url):
 def test_http_failures_are_safe_without_retry_or_redirect(monkeypatch, discovery, status, code):
     _, agent, config, _ = discovery
     replay(monkeypatch, [(status, b"private diagnostics", {"Location": "https://internal.local/private", "Retry-After": "120"})])
-    result = agent.discover(str(config))
+    result = agent.discover(str(config), refresh=True)
     assert result["errors"][0]["code"] == code
     assert result["errors"][0]["http_status"] == status
     if status == 429:
@@ -270,7 +270,7 @@ def test_http_failures_are_safe_without_retry_or_redirect(monkeypatch, discovery
 def test_rate_limit_retry_after_is_preserved(monkeypatch, discovery, header, expected):
     _, agent, config, _ = discovery
     replay(monkeypatch, [(429, b"", {"Retry-After": header})])
-    assert agent.discover(str(config))["errors"][0]["retry_after"] == expected
+    assert agent.discover(str(config), refresh=True)["errors"][0]["retry_after"] == expected
 
 
 @pytest.mark.parametrize("body,code", [(b"<html>private</html>", "invalid_payload"),
@@ -278,7 +278,7 @@ def test_rate_limit_retry_after_is_preserved(monkeypatch, discovery, header, exp
 def test_malformed_json_and_transport_failures_are_safe(monkeypatch, discovery, body, code):
     _, agent, config, _ = discovery
     replay(monkeypatch, [(200, body, {})])
-    result = agent.discover(str(config))
+    result = agent.discover(str(config), refresh=True)
     assert result["errors"][0]["code"] == code
     assert "private" not in json.dumps(result)
     assert agent.store.list_jobs() == []
@@ -291,12 +291,12 @@ def test_failed_board_retains_history_and_does_not_block_later_board(monkeypatch
     items(provider, bad)[1] = None
     replay(monkeypatch, [ok(data), ok(bad), ok([] if provider == "lever" else {"jobs": []})],
            extra_endpoints=(ENDPOINTS[provider].replace("/example", "/other-example"),))
-    assert agent.discover(str(config))["added"] == 2
+    assert agent.discover(str(config), refresh=True)["added"] == 2
     jid = agent.store.list_jobs()[0]["id"]
     agent.store.set_prepared(jid, "fictional-resume.docx", "fictional-letter.docx")
     before = history(agent)
     config.write_text(json.dumps({"boards": [board, {**board, "token": "other-example", "company": "Other Example Employer"}]}), encoding="utf-8")
-    result = agent.discover(str(config))
+    result = agent.discover(str(config), refresh=True)
     assert len(result["errors"]) == 1
     assert len(result["by_source"]) == 1
     assert result["by_source"][0]["retrieved"] == 0

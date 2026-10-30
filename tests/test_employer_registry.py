@@ -4,6 +4,7 @@ import json
 import pytest
 
 from internship_agent.service import Agent
+from internship_agent.discovery_types import SourcePage
 
 
 def board(**changes):
@@ -79,7 +80,7 @@ def test_unrelated_legacy_extensions_cannot_change_board_identity(tmp_path, monk
     assert board_identity(load_registry(path)["boards"][0]) == board_identity(board())
     path.write_text(json.dumps({"boards": [legacy, board()]}))
     calls = []
-    monkeypatch.setattr("internship_agent.service.retrieve_board", lambda entry, root: calls.append(entry) or [])
+    monkeypatch.setattr("internship_agent.service.retrieve_page", lambda entry, root, *a, **k: calls.append(entry) or SourcePage([]))
     result = Agent(str(tmp_path / "db")).discover(str(path))
     assert len(calls) == 1
     assert len(result["errors"]) == 1
@@ -188,7 +189,7 @@ def test_discovery_validates_entry_before_fetch_and_skips_disabled(tmp_path, mon
         {"provider": "lever", "token": "bad", "company": "Bad", "enabled": "false"},
         {"provider": "greenhouse", "token": "valid", "company": "Valid"}]}))
     calls = []
-    monkeypatch.setattr(service, "retrieve_board", lambda entry, root: calls.append(entry) or [])
+    monkeypatch.setattr(service, "retrieve_page", lambda entry, root, *a, **k: calls.append(entry) or SourcePage([]))
     agent = Agent(str(tmp_path / "db"))
     result = agent.discover(str(path))
     assert [b["token"] for b in calls] == ["valid"]

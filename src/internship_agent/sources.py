@@ -21,8 +21,10 @@ import os
 import ipaddress
 
 from .models import Job, now_iso, stable_id, validate_board
+from .discovery_types import SourcePage
 
 MAX_BYTES = 16_000_000
+MAX_SOURCE_POSTINGS = 1_000_000
 PUBLIC_BOARDS = {"greenhouse", "lever", "ashby", "smartrecruiters", "workable", "breezy", "personio", "pinpoint", "bamboohr", "teamtailor", "workday"}
 AGGREGATORS = {"remotive", "jobicy", "simplify_github", "usajobs"}
 LOCAL_IMPORTS = {"csv_import", "json_import"}
@@ -40,8 +42,11 @@ class SourceError(ValueError):
 
 
 def _retry_after(value: str) -> str:
-    if re.fullmatch(r"[0-9]{1,10}", value):
-        return value
+    if re.fullmatch(r"[0-9]+", value):
+        digits = value.lstrip("0") or "0"
+        # Restrictions beyond datetime's representable range remain conservative
+        # without retaining an arbitrarily long untrusted header in diagnostics.
+        return digits if len(digits) <= 12 else "253402300799"
     try:
         return parsedate_to_datetime(value).isoformat()
     except (TypeError, ValueError, OverflowError):
@@ -280,11 +285,11 @@ def _ashby_jobs(board: dict, payload: object) -> list[Job]:
     return jobs
 
 
-def _greenhouse_jobs(board: dict, payload: object) -> list[Job]:
+def _greenhouse_jobs(board: dict, payload: object, *, now: datetime | None = None) -> list[Job]:
     if not isinstance(payload, dict) or not isinstance(payload.get("jobs"), list):
         raise SourceError("invalid_payload", "Greenhouse response requires a jobs array")
     jobs = []
-    now = datetime.now(timezone.utc)
+    now = now or datetime.now(timezone.utc)
     for item in payload["jobs"]:
         if not isinstance(item, dict):
             raise SourceError("invalid_payload", "Greenhouse jobs array contains a non-object")
@@ -317,12 +322,12 @@ def _greenhouse_jobs(board: dict, payload: object) -> list[Job]:
     return jobs
 
 
-def normalize(board: dict, payload: object) -> list[Job]:
+def normalize(board: dict, payload: object, *, now: datetime | None = None) -> list[Job]:
     board = validate_board(board)
     provider, token = board["provider"], board["token"]
     jobs: list[Job] = []
     if provider == "greenhouse":
-        jobs = _greenhouse_jobs(board, payload)
+        jobs = _greenhouse_jobs(board, payload, now=now)
     elif provider == "lever":
         jobs = _lever_jobs(board, payload)
     elif provider == "ashby":
@@ -508,31 +513,6 @@ def _source_payload(board: dict, config_root: str) -> tuple[object, bytes | None
         url = f"https://{token}.bamboohr.com/careers/list"
     elif provider == "teamtailor":
         url = f"https://{token}.teamtailor.com/jobs.rss"
-    elif provider == "workday":
-        for i in _items(payload, "jobPostings"):
-            path = str(i.get("externalPath") or "")
-            if not path.startswith("/"): continue
-            site = board["site"]
-            host = board["host"]
-            job_url = f"https://{host}/en-US/{site}{path}"
-            j = make_job(board, path, i.get("title"), job_url,
-                         location=i.get("locationsText"), published=i.get("postedOn"),
-                         description=i.get("jobDescription") or text(i.get("bulletFields")))
-            if j: jobs.append(j)
-    elif provider == "usajobs":
-        result = payload.get("SearchResult", {}) if isinstance(payload, dict) else {}
-        for record in _items(result, "SearchResultItems"):
-            i = record.get("MatchedObjectDescriptor") or {}
-            locations = i.get("PositionLocation") or []
-            detail = i.get("UserArea", {}).get("Details", {}) if isinstance(i.get("UserArea"), dict) else {}
-            uri = i.get("PositionURI")
-            apply_urls = i.get("ApplyURI") or []
-            j = make_job(board, i.get("PositionID") or uri, i.get("PositionTitle"), uri,
-                         company=text(i.get("OrganizationName") or i.get("DepartmentName")),
-                         location=", ".join(text(x.get("LocationName")) for x in locations if isinstance(x, dict)),
-                         description=detail.get("JobSummary", ""), apply_url=apply_urls[0] if apply_urls else uri,
-                         published=i.get("PublicationStartDate"))
-            if j: jobs.append(j)
     elif provider == "usajobs":
         from urllib.parse import urlencode
         key, email = os.environ.get("USAJOBS_API_KEY"), os.environ.get("USAJOBS_EMAIL")
@@ -549,7 +529,7 @@ def _source_payload(board: dict, config_root: str) -> tuple[object, bytes | None
         for term in board.get("search_terms", ["intern", "summer", "co-op"]):
             for page in range(3):
                 data = json.loads(get_bytes(url, post_json={"appliedFacets": {}, "limit":20, "offset":page*20, "searchText":term}))
-                items = _items(data, "jobPostings")
+                items = _page_items(data, "jobPostings")
                 for item in items:
                     path = item.get("externalPath")
                     if path and path not in seen:
@@ -590,3 +570,120 @@ def retrieve_board(board: dict, config_root: str = ".") -> list[Job]:
             items.extend(_items(data, "content"))
         payload = {"content": items}
     return normalize(board, payload)
+
+
+def _page_items(payload: object, field: str) -> list[dict]:
+    """Page evidence never treats a missing array or discarded objects as empty."""
+    value = payload.get(field) if isinstance(payload, dict) else payload
+    if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
+        raise SourceError("invalid_payload", "Source response requires an array of posting objects")
+    return value
+
+
+def _smartrecruiters_page(board: dict, cursor: dict | None) -> SourcePage:
+    offset = 0
+    if cursor is not None:
+        if (not isinstance(cursor, dict) or set(cursor) != {"offset", "total"}
+                or type(cursor["offset"]) is not int or type(cursor["total"]) is not int
+                or not 0 < cursor["offset"] < cursor["total"] <= MAX_SOURCE_POSTINGS):
+            raise SourceError("invalid_cursor", "SmartRecruiters cursor requires bounded numeric offset and total")
+        offset = cursor["offset"]
+    data = fetch_json(f"https://api.smartrecruiters.com/v1/companies/{board['token']}/postings?limit=100&offset={offset}")
+    items = _page_items(data, "content")
+    total = data.get("totalFound") if isinstance(data, dict) else None
+    if type(total) is not int or not 0 <= total <= MAX_SOURCE_POSTINGS:
+        raise SourceError("invalid_payload", "SmartRecruiters requires a bounded nonnegative integer total")
+    if "offset" in data and (type(data["offset"]) is not int or data["offset"] != offset):
+        raise SourceError("invalid_payload", "SmartRecruiters response offset does not match the requested page")
+    if cursor is not None and total != cursor["total"]:
+        raise SourceError("snapshot_changed", "SmartRecruiters total changed; restart the source scan")
+    end = offset + len(items)
+    if len(items) > 100 or end > total or (not items and end < total):
+        raise SourceError("invalid_payload", "SmartRecruiters page counts are inconsistent")
+    for item in items:
+        sid = item.get("id") or item.get("uuid")
+        title = item.get("name")
+        if (isinstance(sid, bool) or not isinstance(sid, (str, int)) or not str(sid).strip()
+                or not isinstance(title, str) or not strip_html(title)):
+            raise SourceError("invalid_posting", "SmartRecruiters posting requires an ID and title")
+        for key in ("postingUrl", "jobAdUrl"):
+            if item.get(key):
+                _posting_url(item[key])
+        advertisement = item.get("jobAd")
+        if advertisement is not None:
+            if not isinstance(advertisement, dict):
+                raise SourceError("invalid_posting", "SmartRecruiters posting has invalid description sections")
+            sections = advertisement.get("sections", {})
+            if not isinstance(sections, dict) or not isinstance(sections.get("jobDescription", {}), dict):
+                raise SourceError("invalid_posting", "SmartRecruiters posting has invalid description sections")
+    jobs = normalize(board, data)
+    complete = end == total
+    return SourcePage(jobs, next_cursor=None if complete else {"offset": end, "total": total},
+                      complete=complete, raw_count=len(items), rejected_count=len(items) - len(jobs))
+
+
+def retrieve_page(board: dict, config_root: str = ".", cursor: dict | None = None,
+                  *, now: datetime | None = None) -> SourcePage:
+    """Read one bounded page, preserving the distinction between coverage and jobs.
+
+    Only the three validated unfiltered ATS snapshots supply absence evidence.
+    Other public readers keep their existing request bounds and remain partial;
+    their successful response alone cannot prove complete board coverage.
+    """
+    board = validate_board(board)
+    provider = board["provider"]
+    if provider != "smartrecruiters" and cursor is not None:
+        raise SourceError("invalid_cursor", "This source does not support a resume cursor")
+    observed_at = now or datetime.now(timezone.utc)
+    if observed_at.tzinfo is None or observed_at.utcoffset() is None:
+        raise ValueError("Discovery time must include a timezone")
+    observed_at = observed_at.astimezone(timezone.utc)
+    try:
+        if provider == "smartrecruiters":
+            return _smartrecruiters_page(board, cursor)
+        data, xml = _source_payload(board, config_root)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise SourceError("invalid_payload", "Source response is not valid JSON") from None
+
+    if xml is not None:
+        try:
+            root = ET.fromstring(xml)
+            if provider == "personio":
+                if root.tag != "workzag-jobs":
+                    raise ValueError()
+                count = len(root.findall(".//position"))
+            elif root.tag == "rss" and root.find("channel") is not None:
+                count = len(root.findall(".//item"))
+            elif root.tag == "{http://www.w3.org/2005/Atom}feed":
+                count = len(root.findall(".//{http://www.w3.org/2005/Atom}entry"))
+            else:
+                raise ValueError()
+            jobs = normalize_xml(board, xml)
+        except (ET.ParseError, ValueError):
+            raise SourceError("invalid_payload", "Source response is not a supported XML feed") from None
+        return SourcePage(jobs, complete=False, raw_count=count, rejected_count=count - len(jobs))
+
+    fields = {"greenhouse": "jobs", "lever": "jobs", "ashby": "jobs", "workable": "jobs",
+              "breezy": "jobs", "pinpoint": "data", "bamboohr": "result", "workday": "jobPostings",
+              "remotive": "jobs", "jobicy": "jobs", "simplify_github": "listings",
+              "csv_import": "jobs", "json_import": "jobs"}
+    if provider == "usajobs":
+        result = data.get("SearchResult") if isinstance(data, dict) else None
+        items = _page_items(result, "SearchResultItems")
+    else:
+        items = _page_items(data, fields[provider])
+    # Validate the whole snapshot before emitting any job or closure evidence.
+    jobs = normalize(board, data, now=observed_at)
+    closed = []
+    if provider == "greenhouse":
+        for item in items:
+            deadline = item.get("application_deadline")
+            if deadline is not None:
+                expires = datetime.fromisoformat(deadline.replace("Z", "+00:00")).astimezone(timezone.utc)
+                if expires <= observed_at:
+                    closed.append({"job_id": stable_id(provider, board["token"], str(item["id"])),
+                                   "deadline": expires.isoformat()})
+    validated_ats = provider in {"greenhouse", "lever", "ashby"}
+    return SourcePage(jobs, complete=validated_ats or provider in LOCAL_IMPORTS,
+                      authoritative=validated_ats and not board.get("intern_only", False),
+                      raw_count=len(items), rejected_count=len(items) - len(jobs), closed=tuple(closed))
