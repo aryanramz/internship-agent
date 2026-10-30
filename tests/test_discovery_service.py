@@ -261,3 +261,20 @@ def test_safe_source_failure_categories_survive_restart(tmp_path, monkeypatch, c
     assert "private" not in json.dumps(report)
     state = DiscoveryState(Agent(root, clock=clock).store)
     assert state.health(clock())[0]["error_code"] == code
+
+
+def test_cli_future_database_failure_is_actionable_and_does_not_change_it(tmp_path, monkeypatch, capsys):
+    import sqlite3
+    from internship_agent import cli
+    root = tmp_path / "db"
+    root.mkdir()
+    path = root / "agent.db"
+    with sqlite3.connect(path) as c:
+        c.execute("PRAGMA user_version=999")
+    before = path.read_bytes()
+    monkeypatch.setattr("sys.argv", ["internship-agent", "--data", str(root), "summary"])
+    with pytest.raises(SystemExit) as failure:
+        cli.main()
+    assert failure.value.code == 2
+    assert "database" in capsys.readouterr().err.lower()
+    assert path.read_bytes() == before

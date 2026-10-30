@@ -49,9 +49,9 @@ def test_migration_is_additive_and_rejects_future_versions(tmp_path):
     c.commit()
     migrate(c)
     migrate(c)
-    assert c.execute('PRAGMA user_version').fetchone()[0] == 1
+    assert c.execute('PRAGMA user_version').fetchone()[0] == 2
     assert c.execute('SELECT event_type,payload_json,created_at FROM events').fetchall() == [('legacy', '{}', 'old')]
-    c.execute('PRAGMA user_version=2')
+    c.execute('PRAGMA user_version=3')
     before = c.execute('SELECT name FROM sqlite_master').fetchall()
     with pytest.raises(ValueError, match='version'):
         migrate(c)

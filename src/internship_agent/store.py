@@ -16,8 +16,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   job_url TEXT NOT NULL, canonical_url TEXT NOT NULL,
   apply_url TEXT NOT NULL, work_mode TEXT NOT NULL,
   published_at TEXT NOT NULL, compensation TEXT NOT NULL,
-  discovered_at TEXT NOT NULL, last_seen_at TEXT NOT NULL,
-  UNIQUE(provider, company, source_id)
+  discovered_at TEXT NOT NULL, last_seen_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_url ON jobs(canonical_url);
 CREATE TABLE IF NOT EXISTS applications (
@@ -50,11 +49,11 @@ class Store:
                 raise FileNotFoundError("Read-only access requires an existing application database")
             return
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        from .discovery_state import migrate, VERSION
         with self.connection() as c:
-            if c.execute("PRAGMA user_version").fetchone()[0] > 1:
+            if c.execute("PRAGMA user_version").fetchone()[0] > VERSION:
                 raise ValueError("Database schema is newer than this application supports")
             c.executescript(SCHEMA)
-            from .discovery_state import migrate
             migrate(c)
 
     @contextmanager

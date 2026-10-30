@@ -26,7 +26,7 @@
 - `retrieve_page(board, config_root='.', cursor=None)` in sources.py. Cursor never contains an arbitrary URL. Legacy retrieve_board remains usable.
 - `DiscoveryState(store)` in discovery_state.py: `begin(source_id, provider, now, refresh=False)`, `commit_page(run_id, page, now)`, `pause(run_id, now)`, `fail(run_id, code, now, retry_after='', http_status=None)`, `health(now, limit=100)`, `scans(limit=100)`, `availability(job_id=None, limit=100)`.
 - `begin` returns run row with `run_id`/`cursor` or skip with `skip_reason`/`next_retry_at`. `commit_page` returns added/updated/duplicate counts; uses `store._upsert_job(connection, job)` inside one transaction.
-- `migrate(connection)` in discovery_state.py adds schema version 1 after baseline tables exist, atomically; rejects future versions. Read-only Store never migrates.
+- `migrate(connection)` in discovery_state.py adds schema version 1 after baseline tables exist and upgrades version 2's obsolete token-blind uniqueness transactionally; serializes before reading version and rejects future versions. Read-only Store never migrates.
 - Agent `discover(..., refresh=False, max_pages=3)` uses injectable UTC clock; compatibility summary retains existing counters/errors/by_source plus skipped/run metadata.
 
 ## Review focus
@@ -45,3 +45,7 @@
 - [ ] Suggestions/provenance: bound inspected jobs and candidate results, keep registration explicit; canonical matches are review-only and preserve separate requisitions.
 - [ ] Documentation and final qualification: explain recovery/evidence/limits; full offline suite, compile, pip check/audit, privacy, demo and links; commit/push/PR, independent complete diff and security review, Python 3.11–3.13 CI.
 - [ ] Merge only after gates pass; verify exact merged tree/main unchanged/post-merge CI; close #10, assess R1 engineering acceptance separately from release publication, recommend #11 without implementing it.
+
+## Final review rulings
+
+- The initial immutable review reproduced two blocking migration defects. Version 2 now serializes upgrade startup and reconstructs only the obsolete jobs constraint while preserving IDs, all row data and references. Tests cover both old and intermediate schemas, real concurrent writers, rollback after drop, custom schema objects and nested caller rollback. The original commit's security scan remains an immutable record; the correction delta requires separate security review before merge.

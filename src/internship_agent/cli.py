@@ -94,7 +94,10 @@ def main():
         except (ValueError,OSError,sqlite3.Error):
             p.exit(2,"Error: discovery reports require an existing compatible local database.\n")
         return
-    agent=Agent(args.data,credentials_dir=args.credentials_dir)
+    try:
+        agent=Agent(args.data,credentials_dir=args.credentials_dir)
+    except (ValueError,OSError,sqlite3.Error):
+        p.exit(2,"Error: local database initialization failed; stop competing writers and check the compatible version/private backup before retrying.\n")
     try:
         if args.command=="google-login":
             from .integrations.google_auth import credentials

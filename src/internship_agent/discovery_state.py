@@ -9,13 +9,14 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 import json
+import re
 import sqlite3
 from urllib.parse import urlsplit
 from uuid import uuid4
 
 from .models import canonical_url
 
-VERSION = 1
+VERSION = 2
 AUTHORITATIVE_PROVIDERS = frozenset({'greenhouse', 'lever', 'ashby'})
 ERROR_CODES = frozenset({'network', 'network_error', 'http_error', 'rate_limited',
     'forbidden', 'not_found', 'unauthorized', 'invalid_payload', 'invalid_posting',
@@ -67,23 +68,79 @@ DDL = (
 )
 
 
-def migrate(connection: sqlite3.Connection) -> None:
-    """Add version-one tables atomically without touching the baseline ledger."""
-    version = connection.execute('PRAGMA user_version').fetchone()[0]
-    if version > VERSION:
-        raise ValueError('Unsupported discovery schema version')
-    if version == VERSION:
+def _repair_job_namespace(connection):
+    """Remove only the obsolete board-token-blind uniqueness, retaining all rows."""
+    indexes = connection.execute("SELECT name FROM pragma_index_list('jobs') WHERE origin='u'").fetchall()
+    obsolete = any([r[0] for r in connection.execute('SELECT name FROM pragma_index_info(?) ORDER BY seqno', (index[0],))]
+                   == ['provider', 'company', 'source_id'] for index in indexes)
+    if not obsolete:
         return
-    # executescript implicitly commits; individual DDL inside a savepoint does not.
-    connection.execute('SAVEPOINT discovery_migration')
+    sql = connection.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='jobs'").fetchone()[0]
+    repaired, count = re.subn(r',\s*UNIQUE\s*\(\s*provider\s*,\s*company\s*,\s*source_id\s*\)', '', sql, count=1, flags=re.I)
+    if count != 1:
+        raise ValueError('Unsupported legacy job constraint; restore backup and review migration')
+    # DROP performs implicit FK actions. The supported ledger uses NO ACTION;
+    # reject extensions with delete actions rather than silently cascading data.
+    tables = connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    for table in tables:
+        for fk in connection.execute('SELECT "table",on_delete FROM pragma_foreign_key_list(?)', (table[0],)):
+            if fk[0] == 'jobs' and fk[1] != 'NO ACTION':
+                raise ValueError('Custom job delete actions require a separately reviewed migration')
+    extensions = connection.execute("SELECT sql FROM sqlite_master WHERE tbl_name='jobs' AND type IN ('index','trigger') AND sql IS NOT NULL").fetchall()
+    deferred = connection.execute('PRAGMA defer_foreign_keys').fetchone()[0]
+    connection.execute('PRAGMA defer_foreign_keys=ON')
     try:
-        for statement in DDL:
-            connection.execute(statement)
-        connection.execute('PRAGMA user_version=1')
+        connection.execute('CREATE TEMP TABLE _discovery_jobs_copy AS SELECT * FROM jobs')
+        connection.execute('DROP TABLE jobs')
+        connection.execute(repaired)
+        # Insert after recreating the referenced table so deferred FK counters
+        # reconcile, then restore indexes/triggers without replaying their effects.
+        connection.execute('INSERT INTO jobs SELECT * FROM temp._discovery_jobs_copy')
+        connection.execute('DROP TABLE temp._discovery_jobs_copy')
+        for extension in extensions:
+            connection.execute(extension[0])
+        if connection.execute('PRAGMA foreign_key_check').fetchall():
+            raise sqlite3.IntegrityError('Job migration failed foreign-key validation')
+    finally:
+        connection.execute('PRAGMA defer_foreign_keys=' + ('ON' if deferred else 'OFF'))
+
+
+def migrate(connection: sqlite3.Connection) -> None:
+    """Serialize before version inspection; all schema/data changes are atomic."""
+    owned = not connection.in_transaction
+    if owned:
+        connection.execute('BEGIN IMMEDIATE')
+    else:
+        # A no-row write obtains the existing transaction's writer lock without
+        # committing the caller's work or firing row triggers.
+        connection.execute('UPDATE jobs SET id=id WHERE 0')
+    saved = False
+    try:
+        version = connection.execute('PRAGMA user_version').fetchone()[0]
+        if version > VERSION:
+            raise ValueError('Unsupported discovery schema version')
+        if version == VERSION:
+            if owned:
+                connection.commit()
+            return
+        connection.execute('SAVEPOINT discovery_migration')
+        saved = True
+        if version < 1:
+            for statement in DDL:
+                connection.execute(statement)
+        if version < 2:
+            _repair_job_namespace(connection)
+        connection.execute('PRAGMA user_version=2')
         connection.execute('RELEASE SAVEPOINT discovery_migration')
+        saved = False
+        if owned:
+            connection.commit()
     except Exception:
-        connection.execute('ROLLBACK TO SAVEPOINT discovery_migration')
-        connection.execute('RELEASE SAVEPOINT discovery_migration')
+        if saved:
+            connection.execute('ROLLBACK TO SAVEPOINT discovery_migration')
+            connection.execute('RELEASE SAVEPOINT discovery_migration')
+        if owned:
+            connection.rollback()
         raise
 
 

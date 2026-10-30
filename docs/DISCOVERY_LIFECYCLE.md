@@ -117,11 +117,20 @@ documented in [the registry guide](EMPLOYER_REGISTRY.md).
 
 ## Schema compatibility and rollback
 
-Writable Store initialization migrates `PRAGMA user_version` 0 to 1 with additive
-source, run, transition, job-source and availability-evidence tables/indexes in a
-transactional savepoint. Existing jobs/applications/events are not rewritten.
-Repeated initialization is idempotent; migration failure rolls back the new
-tables and version. Future schema versions are rejected before baseline DDL.
+Writable Store initialization serializes upgrades before reading `user_version`.
+Version 1 adds source, run, transition, job-source and availability-evidence
+tables/indexes. Version 2 removes the obsolete `UNIQUE(provider, company, source_id)`
+constraint, which omitted the board token and could reject distinct stable IDs.
+Both old version-0 and intermediate version-1 databases upgrade to version 2.
+Only a legacy jobs table with that constraint is reconstructed transactionally;
+all existing IDs, fields, application/event references, custom indexes and
+triggers are retained. Application/event rows are not reassigned or rewritten.
+Foreign keys stay enabled, temporarily defer during reconstruction and are
+explicitly checked before acceptance. Custom job delete cascades fail safely for
+separate review. See [SQLite's foreign-key semantics](https://www.sqlite.org/foreignkeys.html).
+Repeated initialization is idempotent; failure rolls back table reconstruction,
+new state tables and version. Nested caller transactions remain rollbackable.
+Future schema versions are rejected before baseline DDL with safe CLI guidance.
 Read-only MCP and report access never migrates or creates a database.
 
 Before upgrading an operational database, stop writers and make a private backup
@@ -138,7 +147,7 @@ connections unless an explicitly opted-in live test runs. Regression coverage
 includes migrations/rollback, page/restart/fencing, Retry-After, false-closure
 prevention, reopening and prepared/approved/submitted history.
 
-Local qualification on 2026-10-29 (Windows, Python 3.12): **580 passed, 5 skipped,
+Initial qualification on 2026-10-29 (Windows, Python 3.12): **580 passed, 5 skipped,
 22 subtests passed in 105.10 seconds**. Skips are the three opt-in ATS checks,
 the opt-in Sheets write check and a POSIX-only permissions check. A real synthetic
 subprocess terminated during a page transaction; restart recovered zero partial
@@ -146,6 +155,11 @@ job/application/event writes and fenced the abandoned attempt. Compilation,
 dependency consistency/advisory audit, offline demo, 103-file privacy check and
 124 relative documentation references passed. Final immutable review and PR/
 post-merge Python 3.11–3.13 CI evidence are recorded on the associated PR/Issue #10.
+Independent review then found and reproduced concurrent initial-upgrade and
+legacy uniqueness defects. The follow-up version-2 migration has explicit
+concurrent-upgrade, submitted-history, intermediate-version, custom-index/trigger,
+failure-after-drop and nested-rollback regressions. Final counts are recorded on
+the PR/issue after rerunning the full suite.
 
 [PR #22's live qualification](LIVE_ATS_VALIDATION.md) remains dated evidence for
 one Greenhouse, Lever and Ashby board each; Issue #10 does not repeat those live
