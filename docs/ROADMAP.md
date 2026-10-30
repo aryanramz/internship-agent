@@ -26,6 +26,9 @@ approvals or evidence. No additional paid service is required or authorized.
 
 - Source readers/imports, board detection/suggestions, deterministic ranking,
   DOCX drafts, application states/events and CLI are implemented.
+- Issue #9 adds Greenhouse/Lever/Ashby one-board live qualification and the
+  backward-compatible employer registry. This completes Discovery Part 1, not
+  R1 as a whole; #10's incremental health/lifecycle gate is still outstanding.
 - [Issue #1](https://github.com/aryanramz/internship-agent/issues/1) is complete:
   merged [PR #4](https://github.com/aryanramz/internship-agent/pull/4) qualified one
   Greenhouse board, not all 18 source types. Expansion is #9.
@@ -67,7 +70,7 @@ gates rather than invented deadlines or completion percentages.
 
 | Workstream | Remaining engineering scope | Issue / gate |
 |---|---|---|
-| A — Discovery | Greenhouse/Lever/Ashby qualification; compatible employer/ATS registry | [#9](https://github.com/aryanramz/internship-agent/issues/9), R1 |
+| A — Discovery | Implemented: Greenhouse/Lever/Ashby qualification and compatible employer registry | [#9](https://github.com/aryanramz/internship-agent/issues/9), R1 Part 1; see [evidence](LIVE_ATS_VALIDATION.md) |
 | A — Discovery | Incremental scans/checkpoints, health/backoff, freshness, closure/reopening, provenance/dedup; permitted board suggestions/imports | [#10](https://github.com/aryanramz/internship-agent/issues/10), R1 |
 | B — Profile/eligibility | Verified facts; graduation/enrollment/season/work authorization/location; eligible/uncertain/ineligible with evidence | [#11](https://github.com/aryanramz/internship-agent/issues/11), R2 |
 | C — Matching | Internship taxonomy, skills/experience, configurable weights/preferences, explanations and optional calibration | [#12](https://github.com/aryanramz/internship-agent/issues/12), R2 |

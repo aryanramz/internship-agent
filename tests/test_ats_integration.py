@@ -31,11 +31,11 @@ def discovery(tmp_path):
     return Agent(str(tmp_path / "ledger")), str(config)
 
 
-def replay(monkeypatch, responses):
+def replay(monkeypatch, responses, *, extra_endpoints=()):
     """Replace only HTTPS transport; keep urllib status/redirect handling real."""
     class Transport(HTTPSHandler):
         def https_open(self, request):
-            assert request.full_url == ENDPOINT
+            assert request.full_url in (ENDPOINT, *extra_endpoints)
             assert request.get_method() == "GET"
             assert request.timeout == 20
             assert not request.has_header("Authorization")
@@ -170,12 +170,13 @@ def test_retry_after_dates_are_normalized_and_invalid_headers_omitted(monkeypatc
 
 
 def test_failed_board_preserves_ledger_and_later_boards_still_run(monkeypatch, payload, discovery):
-    replay(monkeypatch, [ok(payload), (410, b"", {}), ok({"jobs": []})])
+    replay(monkeypatch, [ok(payload), (410, b"", {}), ok({"jobs": []})],
+           extra_endpoints=(ENDPOINT.replace("/example/", "/other-example/"),))
     agent, config = discovery
     assert agent.discover(config)["added"] == 2
     jid = agent.store.list_jobs()[0]["id"]
     agent.store.set_prepared(jid, "synthetic-resume.docx", "synthetic-letter.docx")
-    Path(config).write_text(json.dumps({"boards": [BOARD, BOARD]}), encoding="utf-8")
+    Path(config).write_text(json.dumps({"boards": [BOARD, {**BOARD, "token": "other-example"}]}), encoding="utf-8")
     result = agent.discover(config)
     assert len(result["errors"]) == 1
     assert len(result["by_source"]) == 1

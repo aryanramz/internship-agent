@@ -18,7 +18,7 @@ endpoint is active. See [roadmap](ROADMAP.md) and [release gates](RELEASE_PLAN.m
 | Responsibility | Implemented boundary |
 |---|---|
 | Ingestion | `sources.py` retrieves/normalizes supported public APIs/feeds/imports; `models.py` validates board inputs and stable posting identity |
-| Employer sources | `source_detection.py` detects known board URLs; `service.py` suggests from ingested links; CLI explicitly registers boards in local source JSON |
+| Employer sources | `registry.py` extends local source JSON with employer identity/provenance/evidence; detection/suggestions reuse known URLs; CLI explicitly registers or lists without network |
 | Ledger | `Store` in `store.py`: jobs, applications, events and staged email leads in SQLite |
 | Orchestration | `Agent` in `service.py`: discovery, ranked views, document preparation, tracking and separately authorized optional Google operations |
 | Fit and documents | `scoring.py`: deterministic component scores/keyword warnings; `documents.py`: profile-based DOCX emphasis/drafts, not a claim-verification engine |
@@ -53,8 +53,11 @@ supplied by the operator, without independently establishing employer receipt.
 
 SQLite remains authoritative for job/application state. A Google Sheet is an
 optional reviewed mirror, not a second authority. Local source JSON is the current
-board configuration; #9 will extend it compatibly into an employer registry,
-without duplicating the application ledger. Profile/documents/credentials remain
+board configuration; Issue #9 extends it compatibly with an employer registry
+without duplicating the application ledger or changing job IDs. Reads do not
+migrate files; explicit registration is idempotent and atomic. Different boards
+are linked only with an explicitly verified employer ID, not a shared name.
+Profile/documents/credentials remain
 private files; structured verified-fact provenance is planned in #11.
 
 Posting IDs derive from provider, board token and posting ID; canonical URLs
@@ -89,8 +92,10 @@ failure recovery and repeat actions before any browser assistant depends on it.
 ## Optional integrations and security
 
 - Public readers use fixed provider endpoints, HTTPS, bounded responses and refused
-  redirects. User RSS requires explicit trusted configuration. Only Greenhouse has
-  dated live ingestion evidence; other readers remain live-unqualified.
+  redirects. User RSS requires explicit trusted configuration. Greenhouse, Lever
+  and Ashby each have dated one-board live ingestion evidence; the other 15 types
+  remain live-unqualified. Registry careers/provenance URLs are metadata only,
+  never discovery request destinations; [registry details](EMPLOYER_REGISTRY.md).
 - Google credentials use a shared per-user location independent of database root,
   explicit account overrides and nondestructive legacy adoption. Tokens are local
   JSON protected by account ACLs, not an encrypted vault. A ChatGPT connector does
@@ -118,8 +123,8 @@ failure recovery and repeat actions before any browser assistant depends on it.
 
 ## Planned evolution, without backend replacement
 
-1. Extend existing readers/configuration into a qualified employer registry and
-   incremental source-health/lifecycle system (#9/#10).
+1. Issue #9 provides three-provider qualification and a compatible employer
+   registry. Incremental source-health/lifecycle remains #10 and is not implemented.
 2. Add structured candidate facts/eligibility, explainable preferences/taxonomy and
    claim-traced document variants (#11–#13). Keep deterministic operation available.
 3. Qualify a recoverable preparation/tracking service contract (#14), then share

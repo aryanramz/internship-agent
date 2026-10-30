@@ -8,7 +8,8 @@ from .models import validate_board
 
 def detect_source(url: str, company: str) -> dict:
     p = urlsplit(url)
-    if p.scheme != "https" or not p.hostname or p.username or p.password:
+    if (p.scheme != "https" or not p.hostname or p.username or p.password
+            or p.port not in (None,443) or any(ord(c)<32 or ord(c)==127 for c in url)):
         raise ValueError("Paste an HTTPS employer careers URL")
     host = p.hostname.lower()
     parts = [part for part in p.path.split("/") if part]

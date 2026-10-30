@@ -182,6 +182,104 @@ def _place(place: object) -> str:
     return text(place)
 
 
+def _posting_url(value: object) -> str:
+    """Validate linked ATS URLs without making a request to them."""
+    try:
+        if not isinstance(value, str) or any(c.isspace() or ord(c) < 32 for c in value) or "\\" in value:
+            raise ValueError()
+        _validate_feed_url(value)
+        hostname = urlsplit(value).hostname or ""
+        labels = hostname.split(".")
+        if (len(labels) < 2 or not re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", labels[-1])
+                or any(not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", label) for label in labels)):
+            raise ValueError()
+    except ValueError:
+        raise SourceError("invalid_posting", "ATS posting requires public HTTPS URLs without credentials") from None
+    return value
+
+
+def _ats_items(payload: object, *, array: bool = False) -> list[dict]:
+    value = payload if array else payload.get("jobs") if isinstance(payload, dict) else None
+    if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
+        raise SourceError("invalid_payload", "ATS response requires an array of posting objects")
+    return value
+
+
+def _ats_strings(item: dict, fields: tuple[str, ...]) -> None:
+    if any(item.get(field) is not None and not isinstance(item[field], str) for field in fields):
+        raise SourceError("invalid_posting", "ATS posting has invalid text fields")
+
+
+def _ats_identity(item: dict, title_field: str, url_field: str, *, fallback_id: bool = False) -> tuple[str, str, str]:
+    title = item.get(title_field)
+    url = _posting_url(item.get(url_field))
+    sid = item.get("id")
+    if fallback_id and "id" not in item:
+        # Preserve the existing Ashby identity when its optional ID is absent.
+        sid = url.rsplit("/", 1)[-1]
+    if (not isinstance(sid, str) or not sid.strip() or not isinstance(title, str) or not strip_html(title)):
+        raise SourceError("invalid_posting", "ATS posting has an invalid ID or title")
+    return sid, title, url
+
+
+def _lever_jobs(board: dict, payload: object) -> list[Job]:
+    jobs = []
+    for item in _ats_items(payload, array=True):
+        sid, title, url = _ats_identity(item, "text", "hostedUrl")
+        _ats_strings(item, ("descriptionPlain", "description", "additionalPlain", "additional", "workplaceType"))
+        apply_url = _posting_url(item["applyUrl"]) if item.get("applyUrl") is not None else url
+        categories = item.get("categories")
+        if categories is not None and not isinstance(categories, dict):
+            raise SourceError("invalid_posting", "Lever posting has invalid categories")
+        _ats_strings(categories or {}, ("location",))
+        sections = item.get("lists", [])
+        if not isinstance(sections, list) or any(not isinstance(section, dict) for section in sections):
+            raise SourceError("invalid_posting", "Lever posting has invalid description sections")
+        parts = [item.get("descriptionPlain") or item.get("description") or ""]
+        for section in sections:
+            _ats_strings(section, ("text", "content"))
+            parts.extend((section.get("text") or "", section.get("content") or ""))
+        parts.append(item.get("additionalPlain") or item.get("additional") or "")
+        job = make_job(board, sid, title, url, apply_url=apply_url,
+                       location=(categories or {}).get("location"), description=" ".join(parts),
+                       work_mode=item.get("workplaceType"))
+        # Lever's public field contract supplies no guaranteed publication date.
+        if job:
+            jobs.append(job)
+    return jobs
+
+
+def _ashby_jobs(board: dict, payload: object) -> list[Job]:
+    jobs = []
+    for item in _ats_items(payload):
+        for field in ("isListed", "isRemote"):
+            if field in item and not isinstance(item[field], bool):
+                raise SourceError("invalid_posting", "Ashby posting has invalid boolean fields")
+        if item.get("isListed") is False:
+            continue
+        sid, title, url = _ats_identity(item, "title", "jobUrl", fallback_id=True)
+        _ats_strings(item, ("location", "descriptionPlain", "descriptionHtml", "publishedAt", "workplaceType"))
+        apply_url = _posting_url(item["applyUrl"]) if item.get("applyUrl") is not None else url
+        published = item.get("publishedAt")
+        if published:
+            try:
+                if datetime.fromisoformat(published.replace("Z", "+00:00")).tzinfo is None:
+                    raise ValueError()
+            except ValueError:
+                raise SourceError("invalid_posting", "Ashby posting has an invalid publication timestamp") from None
+        comp = item.get("compensation")
+        if comp is not None and not isinstance(comp, dict):
+            raise SourceError("invalid_posting", "Ashby posting has invalid compensation")
+        _ats_strings(comp or {}, ("compensationTierSummary",))
+        job = make_job(board, sid, title, url, apply_url=apply_url, location=item.get("location"),
+                       description=item.get("descriptionPlain") or item.get("descriptionHtml"),
+                       published=published, work_mode=item.get("workplaceType") or ("Remote" if item.get("isRemote") else "Unknown"),
+                       compensation=(comp or {}).get("compensationTierSummary"))
+        if job:
+            jobs.append(job)
+    return jobs
+
+
 def _greenhouse_jobs(board: dict, payload: object) -> list[Job]:
     if not isinstance(payload, dict) or not isinstance(payload.get("jobs"), list):
         raise SourceError("invalid_payload", "Greenhouse response requires a jobs array")
@@ -201,10 +299,7 @@ def _greenhouse_jobs(board: dict, payload: object) -> list[Job]:
                 or (content is not None and not isinstance(content, str))
                 or (published is not None and not isinstance(published, str))):
             raise SourceError("invalid_posting", "Greenhouse posting has invalid ID, title, URL or content fields")
-        try:
-            _validate_feed_url(url)
-        except ValueError:
-            raise SourceError("invalid_posting", "Greenhouse posting requires a public HTTPS URL without credentials") from None
+        _posting_url(url)
         deadline = item.get("application_deadline")
         if deadline is not None:
             try:
@@ -229,25 +324,9 @@ def normalize(board: dict, payload: object) -> list[Job]:
     if provider == "greenhouse":
         jobs = _greenhouse_jobs(board, payload)
     elif provider == "lever":
-        for i in _items(payload, "jobs"):
-            desc = i.get("descriptionPlain") or i.get("description") or ""
-            for sec in i.get("lists", []):
-                if isinstance(sec, dict): desc += " " + text(sec.get("content"))
-            j = make_job(board, i.get("id"), i.get("text"), i.get("hostedUrl"),
-                         apply_url=i.get("applyUrl"), location=_place((i.get("categories") or {}).get("location")),
-                         description=desc, work_mode=i.get("workplaceType"))
-            if j: jobs.append(j)
+        jobs = _lever_jobs(board, payload)
     elif provider == "ashby":
-        for i in _items(payload, "jobs"):
-            if i.get("isListed") is False: continue
-            url = i.get("jobUrl", "")
-            comp = i.get("compensation") or {}
-            j = make_job(board, i.get("id") or url.rsplit("/", 1)[-1], i.get("title"), url,
-                         location=i.get("location"), description=i.get("descriptionPlain") or i.get("descriptionHtml"),
-                         apply_url=i.get("applyUrl"), published=i.get("publishedAt"),
-                         work_mode=i.get("workplaceType") or ("Remote" if i.get("isRemote") else "Unknown"),
-                         compensation=comp.get("compensationTierSummary") if isinstance(comp, dict) else "")
-            if j: jobs.append(j)
+        jobs = _ashby_jobs(board, payload)
     elif provider == "smartrecruiters":
         for i in _items(payload, "content"):
             loc = i.get("location") or {}

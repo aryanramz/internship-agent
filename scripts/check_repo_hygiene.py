@@ -31,6 +31,7 @@ def tracked_paths() -> list[str]:
 def main() -> int:
     failures = []
     bad_name = re.compile(r"(^|/)(data/|demo-output/|generated/|secrets/|credentials/|profile\.json$|sources\.json$|google-oauth-client\.json$|mcp-(?:auth|jwks|gateway)\.json$|keycloak(?:-realm\.json|\.conf)$|client_secret[^/]*\.json$)|\.(db(?:-shm|-wal)?|sqlite3?|pem|key)$|(^|/)\.env($|\.)|token\.json$|google_[^/]*_token[^/]*\.tmp$|credentials[^/]*\.json$", re.I)
+    private_registry = re.compile(r"(^|/)(employers\.json|employer-registry\.json|\.sources-registry-[^/]*\.tmp)$", re.I)
     # Match likely tokens and credential payloads without embedding personal values.
     credential_patterns = [
         re.compile(r"gh[pousr]_[A-Za-z0-9]{36}"),
@@ -39,7 +40,7 @@ def main() -> int:
         re.compile(r'\"refresh_token\"\s*:\s*\"[^\"]+\"'),
     ]
     for relative in tracked_paths():
-        if bad_name.search(relative):
+        if bad_name.search(relative) or private_registry.search(relative):
             failures.append(f"Private artifact tracked: {relative}")
             continue
         f = ROOT / relative

@@ -15,6 +15,9 @@ generated/
 demo-output/
 config/profile.json
 config/sources.json
+config/employers.json
+config/employer-registry.json
+**/.sources-registry-*.tmp
 config/google-oauth-client.json
 config/mcp-auth.json
 config/mcp-jwks.json

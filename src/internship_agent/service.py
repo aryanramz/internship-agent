@@ -6,6 +6,7 @@ from .scoring import evaluate
 from .documents import create_documents,tailoring_report
 from .store import Store
 from .models import validate_board
+from .registry import board_identity, load_registry, read_configuration, registry_entry, register_sources
 
 class Agent:
     def __init__(self, root: str, *, credentials_dir: str | None = None, read_only: bool = False):
@@ -25,14 +26,18 @@ class Agent:
         return value
 
     def discover(self, sources_path: str) -> dict:
-        with open(sources_path, encoding="utf-8") as f:
-            source=json.load(f)
+        source=read_configuration(sources_path)
         summary={"added":0,"updated":0,"duplicate":0,"errors":[],"by_source":[]}
+        seen=set()
         for entry in source.get("boards",[]):
-            if entry.get("enabled", True) is False:
-                continue
             try:
-                entry=validate_board(entry)
+                entry=registry_entry(entry)
+                if not entry["enabled"]:
+                    continue
+                identity=board_identity(entry)
+                if identity in seen:
+                    raise ValueError("Duplicate configured board; discovery skipped this entry")
+                seen.add(identity)
                 jobs=retrieve_board(entry, str(Path(sources_path).resolve().parent.parent))
                 counts={"provider":entry["provider"],"company":entry["company"],"retrieved":len(jobs),"added":0,"updated":0,"duplicate":0}
                 for job in jobs:
@@ -41,7 +46,7 @@ class Agent:
                     counts[outcome]+=1
                 summary["by_source"].append(counts)
             except Exception as exc:
-                error={"board":entry.get("company","unknown"),"error":str(exc)[:250]}
+                error={"board":entry.get("company","unknown") if isinstance(entry,dict) else "unknown","error":str(exc)[:250]}
                 if isinstance(exc, SourceError):
                     error["code"]=exc.code
                     if exc.http_status is not None:
@@ -61,22 +66,21 @@ class Agent:
         """
         from .source_detection import detect_source
         sources_file=Path(sources_path)
-        config=json.loads(sources_file.read_text(encoding="utf-8")) if sources_file.exists() else {"boards":[]}
-        configured={(i.get("provider"),i.get("token"),i.get("site")) for i in config.get("boards",[])}
+        config=load_registry(sources_file,missing_ok=True)
+        configured={board_identity(i) for i in config["boards"]}
         discovered={}
         for record in self.store.list_jobs(10000):
             try:
-                board=detect_source(record["job_url"],record["company"])
+                board=registry_entry(detect_source(record["job_url"],record["company"]))
+                board["provenance"]={"method":"suggested","url":board["board_url"]}
             except ValueError:
                 continue
-            key=(board.get("provider"),board.get("token"),board.get("site"))
+            key=board_identity(board)
             if key not in configured:
                 discovered[key]=board
         suggestions=list(discovered.values())[:max(0,min(500,limit))]
         if apply and suggestions:
-            config.setdefault("boards",[]).extend(suggestions)
-            sources_file.parent.mkdir(parents=True,exist_ok=True)
-            sources_file.write_text(json.dumps(config,indent=2)+"\n",encoding="utf-8")
+            register_sources(sources_file,suggestions)
         return {"available":len(discovered),"shown":len(suggestions),"registered":len(suggestions) if apply else 0,
                 "sources":suggestions,"note":"Registration does not fetch postings until the next discover run."}
 

@@ -17,7 +17,7 @@ facts or authorizing submissions and recruiter messages.
 **Status: working local prototype, not production-ready.** Package metadata is
 0.4.0; runtime version drift and the proposed release sequence are documented in
 [the release plan](docs/RELEASE_PLAN.md). Most tests are offline/mocked.
-Greenhouse has [one-board live validation](docs/LIVE_ATS_VALIDATION.md), Sheets has
+Greenhouse, Lever and Ashby each have [one-board live qualification](docs/LIVE_ATS_VALIDATION.md), Sheets has
 [operator-reported synthetic live results](docs/SHEETS_VALIDATION.md), and local
 MCP stdio/HTTP is validated. Actual authenticated ChatGPT invocation is pending.
 [PR #8's prepared gateway](docs/MCP_EXTERNAL_CONNECTIVITY.md) is included;
@@ -28,7 +28,7 @@ submission or recruiter emailing**. See the [capability matrix](docs/CAPABILITIE
 
 | Component | Current capability | Limitation |
 |---|---|---|
-| Discovery | 18 source types: public ATS feeds, public aggregators, RSS, approved JSON/CSV imports | No exhaustive global job index; feeds can change or rate-limit |
+| Discovery | 18 source types; Greenhouse/Lever/Ashby live-qualified; compatible employer registry | One public board per named provider, not all sources/boards; feeds can change or rate-limit |
 | Fit scoring | Explainable weighted role, skill, location, freshness, compensation, employer scoring | Heuristic score, **not** an interview/hiring probability |
 | Screening | Flags senior/graduate/clearance language | Does not determine legal/work eligibility |
 | Documents | Single-column DOCX resume and cover-letter draft from a verified profile | No guarantee of passing ATS; requires human review |
@@ -54,6 +54,12 @@ Copy-Item config\sources.example.json config\sources.json -ErrorAction SilentlyC
 internship-agent discover
 internship-agent rank --min-score 55
 ```
+
+Employer registration remains explicit and performs no network/database access:
+`internship-agent add-source <public-board-url> --company <name>`;
+`internship-agent list-sources` inspects the local registry. Optional
+`--careers-url`, `--employer-id` and `--disabled` support reviewed metadata and
+verified board linking. See [registry configuration and compatibility](docs/EMPLOYER_REGISTRY.md).
 
 The demo creates `demo-output/` containing a fictional three-job database, ranking summary and DOCX resume/letter. It does not authenticate, search real jobs, submit forms, or send email. **Never use the synthetic profile as your real resume.**
 
@@ -118,8 +124,9 @@ The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operat
 
 ## Roadmap
 
-1. Multi-provider ATS validation and employer registry, then incremental scans,
-   health and conservative posting lifecycle ([next PR](docs/NEXT_ENGINEERING_PR.md)).
+1. Multi-provider ATS validation and employer registry are implemented in Issue #9;
+   incremental scans, health and conservative posting lifecycle remain Issue #10
+   ([scope and handoff](docs/NEXT_ENGINEERING_PR.md)).
 2. Verified profile/eligibility, explainable ranking and document QA.
 3. Recoverable local preparation/tracking, then Windows scheduling and dashboard.
 4. Optional ChatGPT qualification in parallel; approved browser assistance next.
