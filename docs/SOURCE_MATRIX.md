@@ -2,12 +2,12 @@
 
 "Reader" means normalizing postings into the local job database. It does **not** imply authorization to apply, authenticated access, or an assurance that all postings are returned.
 
-Baseline: merged develop at `3a79f555617453fc68dd51d36a9d1e51eabd2dcc`.
-Only Greenhouse has the recorded live board qualification. Other listed readers
-are implemented with local/synthetic coverage, not individually live-qualified.
-Existing `add-source`/`suggest-sources` are board registration/detection, not a
-complete employer registry or general web crawler. [Issue #9](https://github.com/aryanramz/internship-agent/issues/9)
-extends qualification to Greenhouse/Lever/Ashby and a compatible registry;
+Issue #9 extends the merged `19ab97340463a4033bf50ac398b6b33ce3c59351` baseline.
+Greenhouse, Lever and Ashby now have dated [one-board live qualification](LIVE_ATS_VALIDATION.md).
+The other 15 source types remain locally/synthetically covered, not live-qualified.
+`add-source`/`suggest-sources` retain explicit no-fetch registration and detection,
+now backed by the compatible [employer registry](EMPLOYER_REGISTRY.md). This is not
+a general crawler or global employer index.
 [Issue #10](https://github.com/aryanramz/internship-agent/issues/10) adds health,
 incremental scans and posting lifecycle. See [capability evidence](CAPABILITIES.md).
 
@@ -16,8 +16,8 @@ incremental scans and posting lifecycle. See [capability evidence](CAPABILITIES.
 | Type | Reader | Inputs | Current limitations |
 |---|---|---|---|
 | Company ATS | Greenhouse | Company board slug | [Live validated](LIVE_ATS_VALIDATION.md) on one public board; other/legacy boards may differ |
-| Company ATS | Lever | Company slug | Public JSON postings |
-| Company ATS | Ashby | Company slug | Public job-board endpoint |
+| Company ATS | Lever | Company slug | Live-qualified on one public board; closing content retained; publication date unknown |
+| Company ATS | Ashby | Company slug | Live-qualified on one public board; publishedAt is last published, not original creation |
 | Company ATS | SmartRecruiters | Company identifier | Public Posting API; first 500 posts; list details may be sparse |
 | Company ATS | Workable | Account slug | Public widget endpoint; one record per shortcode; rate limits |
 | Company ATS | Breezy HR | Subdomain | Public board JSON; descriptions not included in index |

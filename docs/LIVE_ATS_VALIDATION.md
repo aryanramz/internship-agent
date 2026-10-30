@@ -1,4 +1,61 @@
-# Live ATS discovery validation (Issue #1)
+# Live ATS discovery validation (Issues #1 and #9)
+
+## Three-provider qualification — 2026-10-29
+
+Credential-free production readers were exercised against one public board each,
+using isolated local ledgers and fictional preparation/approval references. No
+personal profile, Google grant, application submission or private employer API was
+used. Official contracts checked: [Greenhouse](https://docs.greenhouse.io/job-board.html),
+[Lever public Postings API](https://github.com/lever/postings-api), and
+[Ashby public job board API](https://developers.ashbyhq.com/docs/public-job-posting-api).
+
+| Provider / board | Fixed GET endpoint | HTTP | Jobs / bytes per response | Descriptions / publication fields | Repeat |
+|---|---|---|---|---|---|
+| Greenhouse / greenhouse | `https://boards-api.greenhouse.io/v1/boards/greenhouse/jobs?content=true` | 200 | 18 / 220,280 | 18 / 18 `first_published` | 0 added, 18 updated |
+| Lever / palantir | `https://api.lever.co/v0/postings/palantir?mode=json` | 200 | 302 / 5,931,609 | 302 / 0 publication timestamps | 0 added, 302 updated |
+| Ashby / Ashby | `https://api.ashbyhq.com/posting-api/job-board/Ashby?includeCompensation=true` | 200 | 71 / 2,303,443 | 71 / 71 `publishedAt` | 0 added, 71 updated |
+
+The two qualification requests ran at 19:13:13/15 UTC (Greenhouse), 19:13:16/23
+UTC (Lever) and 19:13:31/33 UTC (Ashby). All retained stable job IDs, exactly one
+application row per posting, prepared and approved states, approval timestamps and
+all historical events. The explicit live test result was **3 passed in 21.29s**.
+These counts are observed snapshots, not internship-only totals or completeness
+claims. The other 15 configured source types are not live-qualified by this work.
+
+One initial shape probe and two final qualification GETs per provider produced
+nine successful API responses in total. Initial restricted-local attempts returned
+network errors with no HTTP status and were not counted as success; authorized
+network execution then used the fixed endpoints. There were no automatic retries,
+detail requests, redirects followed or broad employer searches. Each request had
+a 20-second timeout and 16 MB response cap; repeat requests were serial with at
+least one second between them. No additional live reruns were performed.
+
+### Demonstrated corrections and date semantics
+
+- Lever's published responses include description sections and closing content.
+  The old reader dropped closing text and section headings; both are now retained
+  with plain-text/HTML fallbacks. `createdAt` was present on all 302 records, but
+  the public field contract does not define a publication date. It is deliberately
+  not relabeled as publication; normalized publication remains unknown.
+- Lever/Ashby malformed array/item/field/URL data now raises safe structured errors
+  before any part of that snapshot is ingested. Valid empty snapshots remain valid.
+- Ashby `publishedAt` means **last published**, not guaranteed original creation.
+  The existing explicit-ID/URL-fallback identity, unlisted filtering and workplace
+  type precedence are preserved. Dates, when supplied, must be timezone-aware.
+- Linked job/application URLs are validated as public HTTPS syntactically and are
+  never fetched by normalization. Private/IP/intranet/malformed hosts, credentials
+  and nonstandard ports are rejected. This does not prove destination availability
+  or solve DNS rebinding for future browser/network use.
+- HTTP 404/410/429, Retry-After seconds/dates, malformed JSON, timeouts, transport
+  failures and redirect refusal have fictional real-urllib replay coverage for
+  all three providers. Retry-After is reported and never automatically retried;
+  persistent backoff/health/lifecycle are outside this issue.
+
+The [employer registry](EMPLOYER_REGISTRY.md) extends existing source JSON without
+changing posting IDs/SQLite history. Registration and inspection never fetch URLs;
+validation metadata remains unverified until an operator records actual evidence.
+
+## Initial Greenhouse qualification — 2026-10-28
 
 ## Scope and observation
 
@@ -18,8 +75,9 @@ temporary SQLite ledger across two requests. Counts may change as jobs change.
 
 The [Greenhouse Job Board API documentation](https://docs.greenhouse.io/job-board.html)
 defines the list endpoint and confirms public GET access without authentication.
-This validates one reader; Lever, Ashby, other readers and Google integrations
-still need their own live qualification.
+That initial check validated one reader. Lever and Ashby were subsequently
+qualified on 2026-10-29 as recorded above; other readers and Google integrations
+require their own separate qualification.
 
 ## Network and rate-limit policy
 
@@ -79,7 +137,8 @@ Install the existing test extra, then run the default offline suite:
 python -m pytest -q
 ```
 
-Explicitly authorize public API requests for just the live check:
+Explicitly authorize public API requests for the three live checks (two serial
+GETs per provider; six requests total):
 
 ```powershell
 $env:RUN_LIVE_ATS = '1'
@@ -88,8 +147,8 @@ Remove-Item Env:RUN_LIVE_ATS
 ```
 
 On macOS/Linux use `RUN_LIVE_ATS=1 python -m pytest -q -s -m live tests/test_ats_live.py`.
-The check uses only temporary configuration/database files, no personal profile,
-and prints counts only. Once enabled, network failures and empty boards fail the
+The checks use only temporary configuration/database files, no personal profile,
+and print sanitized counts/timing metadata only. Once enabled, network failures and empty boards fail the
 test instead of silently skipping. A board change between its two snapshots can
 also fail the repeat-count assertion; inspect the change before rerunning.
 

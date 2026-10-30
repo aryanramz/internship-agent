@@ -1,4 +1,5 @@
 {
+  "registry_version": 1,
   "boards": [
     {
       "provider": "simplify_github",
@@ -22,7 +23,20 @@
       "provider": "greenhouse",
       "company": "Example Greenhouse Employer",
       "token": "example",
-      "enabled": false
+      "enabled": false,
+      "employer_id": "2d5ff141f5b72493cc1b1707",
+      "employer_name": "Example Greenhouse Employer",
+      "board_url": "https://job-boards.greenhouse.io/example",
+      "careers_url": "https://example.com/careers",
+      "provenance": {
+        "method": "manual",
+        "url": "https://example.com/careers"
+      },
+      "validation": {
+        "status": "unverified",
+        "checked_at": "",
+        "evidence": ""
+      }
     },
     {
       "provider": "lever",

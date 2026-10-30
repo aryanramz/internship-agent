@@ -20,9 +20,9 @@ has a limited scope:
 | Component | Merged implementation / evidence | Validation boundary | Remaining work |
 |---|---|---|---|
 | Independent operation | Python CLI, `Agent`/`Store`, synthetic demo and `test_agent.py`/`test_public_demo.py` | Local operation needs no ChatGPT, model API or Google | Recoverable workflow #14, dashboard #16 |
-| Sources | 18 configured source types; `models.py`/`sources.py`, normalization/import tests | Reader count is not live provider coverage | #9 multi-provider qualification; #10 health/lifecycle |
-| Greenhouse | PR #4; HTTP replay and opt-in test; [live evidence](LIVE_ATS_VALIDATION.md) | One public board, not every board or destination page | Preserve fixes; qualify Lever/Ashby in #9 |
-| Employer sources | `detect_source`, CLI `add-source`/`suggest-sources`, configured `boards` | Known-URL detection and suggestions from ingested records; registration does not fetch | Richer compatible registry/provenance #9; bounded suggestions #10 |
+| Sources | 18 configured types; Greenhouse/Lever/Ashby strict schemas and HTTP replay tests | One live board each for those three, not all types/boards | #10 health/lifecycle; [dated evidence](LIVE_ATS_VALIDATION.md) |
+| ATS qualification | PR #4 Greenhouse fixes preserved; Issue #9 qualifies Greenhouse/Lever/Ashby with repeated ingestion and prepared/approved history | One public board each; no destination-page or internship-only completeness guarantee | #10 availability/health; other providers remain unqualified |
+| Employer sources | `registry.py`, known-URL detection, explicit add/suggest and read-only list; stable employer IDs/provenance/validation metadata | Legacy JSON compatible; no automatic employer-name merging, crawling or remote validation at registration | Single-writer local configuration; #10 bounded discovery/health |
 | Incremental/availability | Stable IDs, canonical URLs, upsert/dedup, `last_seen_at`; Greenhouse explicit past-deadline filtering | No general scan checkpoint, durable health or closure/reopening system | #10; failures/partial scans must not imply closure |
 | Candidate facts | Private JSON, `Agent.load_profile` and user-verified input convention | Basic object checks; no fact/provenance verification engine | #11 |
 | Eligibility | Keyword warnings and `review`/`unlikely` in `scoring.evaluate` | Not eligible/uncertain/ineligible rules or legal/work-authorization screening | #11 |

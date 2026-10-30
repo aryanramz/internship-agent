@@ -23,6 +23,11 @@ def main():
     add.add_argument("url",help="Employer careers-board HTTPS URL")
     add.add_argument("--company",required=True)
     add.add_argument("--sources",default="config/sources.json")
+    add.add_argument("--careers-url",default=None,help="Public employer careers URL; metadata only, never fetched")
+    add.add_argument("--employer-id",default=None,help="Existing stable employer ID for an additional board")
+    add.add_argument("--disabled",action="store_true",help="Register without enabling discovery")
+    listing=cmds.add_parser("list-sources",help="Inspect local registry metadata without network or database access")
+    listing.add_argument("--sources",default="config/sources.json")
     sugg=cmds.add_parser("suggest-sources")
     sugg.add_argument("--sources",default="config/sources.json")
     sugg.add_argument("--limit",type=int,default=50)
@@ -47,6 +52,24 @@ def main():
     sh.add_argument("--confirm",default="")
     cmds.add_parser("summary")
     args=p.parse_args()
+    if args.command in {"add-source","list-sources"}:
+        from .registry import load_registry, register_source
+        from .source_detection import detect_source
+        try:
+            if args.command=="list-sources":
+                result=load_registry(args.sources,missing_ok=True)
+            else:
+                board=detect_source(args.url,args.company)
+                board["enabled"]=not args.disabled
+                if args.careers_url is not None:
+                    board["careers_url"]=args.careers_url
+                if args.employer_id is not None:
+                    board["employer_id"]=args.employer_id
+                result=register_source(args.sources,board)
+            print(json.dumps(result,indent=2,ensure_ascii=False))
+        except (ValueError,OSError):
+            p.exit(2,"Error: source registration or configuration is invalid; check the local registry and public board URL.\n")
+        return
     agent=Agent(args.data,credentials_dir=args.credentials_dir)
     try:
         if args.command=="google-login":
@@ -66,21 +89,6 @@ def main():
                     "local_imports":sorted(LOCAL_IMPORTS),"custom_feed":["rss"]}
         elif args.command=="suggest-sources":
             result=agent.suggest_sources(args.sources,args.limit,args.apply)
-        elif args.command=="add-source":
-            from .source_detection import detect_source
-            source=detect_source(args.url,args.company)
-            filepath=Path(args.sources)
-            if filepath.exists():
-                with filepath.open(encoding="utf-8") as f: config=json.load(f)
-            else:config={"boards":[]}
-            key=lambda d:(d.get("provider"),d.get("token"),d.get("site"))
-            if any(key(d)==key(source) for d in config.get("boards",[])):
-                result={"added":False,"reason":"Already configured","source":source}
-            else:
-                config.setdefault("boards",[]).append(source)
-                filepath.parent.mkdir(parents=True,exist_ok=True)
-                with filepath.open("w",encoding="utf-8") as f:json.dump(config,f,indent=2)
-                result={"added":True,"source":source,"file":str(filepath)}
         elif args.command=="import-jobs":
             with open(args.file,encoding="utf-8") as f: records=json.load(f)
             result=agent.import_external_jobs(records)
