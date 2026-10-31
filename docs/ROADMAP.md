@@ -12,8 +12,10 @@ Internship Agent is an open-source, local-first, ChatGPT-oriented internship
 workflow platform. Its target workflow continuously discovers opportunities,
 evaluates candidate eligibility and fit, prepares verified materials, assists
 with explicitly approved application workflows and tracks recruiting outcomes.
-Continuous operation, structured eligibility, a dashboard, browser assistance,
+Continuous operation, a dashboard, browser assistance,
 recruiter workflows and analytics are goals, not current promises.
+Structured local eligibility is implemented in Issue #11 with the bounded
+[declaration/evidence model and manual-review limits](ELIGIBILITY.md).
 
 Python remains primary; SQLite is the authoritative application ledger. The CLI
 already works independently of ChatGPT. A lightweight local dashboard will offer
@@ -73,7 +75,7 @@ gates rather than invented deadlines or completion percentages.
 |---|---|---|
 | A — Discovery | Implemented: Greenhouse/Lever/Ashby qualification and compatible employer registry | [#9](https://github.com/aryanramz/internship-agent/issues/9), R1 Part 1; see [evidence](LIVE_ATS_VALIDATION.md) |
 | A — Discovery | Implemented in #10: bounded page checkpoints, fenced recovery, health/backoff, conservative availability and review-only canonical matches | [#10](https://github.com/aryanramz/internship-agent/issues/10), R1; [evidence/policy](DISCOVERY_LIFECYCLE.md) |
-| B — Profile/eligibility | Verified facts; graduation/enrollment/season/work authorization/location; eligible/uncertain/ineligible with evidence | [#11](https://github.com/aryanramz/internship-agent/issues/11), R2 |
+| B — Profile/eligibility | Implemented in #11: private versioned declarations; graduation/enrollment/term/location and qualified authorization comparisons; eligible/uncertain/ineligible with evidence | [#11](https://github.com/aryanramz/internship-agent/issues/11), R2; [scope/limits](ELIGIBILITY.md) |
 | C — Matching | Internship taxonomy, skills/experience, configurable weights/preferences, explanations and optional calibration | [#12](https://github.com/aryanramz/internship-agent/issues/12), R2 |
 | D — Documents | Master profile, career-track/job variants, letters/answer drafts, claim trace and QA | [#13](https://github.com/aryanramz/internship-agent/issues/13), R2 |
 | E — Workflow | Recoverable preparation/review/tracking, document-bound approval and duplicate-action/evidence handling | [#14](https://github.com/aryanramz/internship-agent/issues/14), R3 |
@@ -127,6 +129,10 @@ flowchart TD
 These replace the old mixed v0.5/v0.6 phase labels. They do not retroactively
 publish releases or bump runtime metadata. Detailed acceptance, version drift
 and publication procedure are in [RELEASE_PLAN.md](RELEASE_PLAN.md).
+R1 discovery engineering is implemented through #9/#10; formal release
+preparation/publication is separate. #11 completes only the eligibility slice of
+R2: #12 ranking/preferences and #13 document QA remain pending. Neither R2 nor
+authenticated ChatGPT qualification is completed by these changes.
 
 ## Measurement and review
 
