@@ -20,6 +20,7 @@ endpoint is active. See [roadmap](ROADMAP.md) and [release gates](RELEASE_PLAN.m
 | Ingestion | `sources.py` retrieves/normalizes supported public APIs/feeds/imports; `models.py` validates board inputs and stable posting identity |
 | Employer sources | `registry.py` extends local source JSON with employer identity/provenance/evidence; detection/suggestions reuse known URLs; CLI explicitly registers or lists without network |
 | Ledger | `Store` in `store.py`: jobs, applications, events and staged email leads in SQLite |
+| Discovery lifecycle | `SourcePage` / `DiscoveryState`: versioned SQLite source/run/provenance/evidence tables, atomic page ingestion/checkpoint, fenced restart and durable retry eligibility |
 | Orchestration | `Agent` in `service.py`: discovery, ranked views, document preparation, tracking and separately authorized optional Google operations |
 | Fit and documents | `scoring.py`: deterministic component scores/keyword warnings; `documents.py`: profile-based DOCX emphasis/drafts, not a claim-verification engine |
 | Local interfaces | `cli.py` for the working pipeline; `tracker.py` for reviewed CSV export; `scripts/run-daily.ps1` is an existing routine runner, not a qualified scheduler |
@@ -60,10 +61,10 @@ are linked only with an explicitly verified employer ID, not a shared name.
 Profile/documents/credentials remain
 private files; structured verified-fact provenance is planned in #11.
 
-Posting IDs derive from provider, board token and posting ID; canonical URLs
-support duplicate enrichment. Existing URL-based dedup has limitations. Never
-merge different requisitions solely on company/title; #10 owns provenance,
-reposts and lifecycle refinements. Publication, first discovery and last-seen
+Posting IDs derive from provider, board token and posting ID. Issue #10 retains
+distinct IDs even when canonical URLs match, with review-only candidate links
+and separate provenance/availability evidence. No application history is moved.
+Publication, first discovery and last-seen
 timestamps have different meanings. Source failure/absence is not evidence of a
 closed posting or a rejected application.
 
@@ -123,8 +124,9 @@ failure recovery and repeat actions before any browser assistant depends on it.
 
 ## Planned evolution, without backend replacement
 
-1. Issue #9 provides three-provider qualification and a compatible employer
-   registry. Incremental source-health/lifecycle remains #10 and is not implemented.
+1. Issues #9/#10 provide three-provider qualification, compatible employer registry
+   and [durable source health/recovery/posting evidence](DISCOVERY_LIFECYCLE.md).
+   Unattended scheduling remains #15; no release is published by these changes.
 2. Add structured candidate facts/eligibility, explainable preferences/taxonomy and
    claim-traced document variants (#11–#13). Keep deterministic operation available.
 3. Qualify a recoverable preparation/tracking service contract (#14), then share

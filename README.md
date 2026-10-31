@@ -29,6 +29,7 @@ submission or recruiter emailing**. See the [capability matrix](docs/CAPABILITIE
 | Component | Current capability | Limitation |
 |---|---|---|
 | Discovery | 18 source types; Greenhouse/Lever/Ashby live-qualified; compatible employer registry | One public board per named provider, not all sources/boards; feeds can change or rate-limit |
+| Discovery recovery | Durable page checkpoints, source health/backoff and separate posting evidence | Manual invocation; conservative coverage/closure policies; no unattended scheduler |
 | Fit scoring | Explainable weighted role, skill, location, freshness, compensation, employer scoring | Heuristic score, **not** an interview/hiring probability |
 | Screening | Flags senior/graduate/clearance language | Does not determine legal/work eligibility |
 | Documents | Single-column DOCX resume and cover-letter draft from a verified profile | No guarantee of passing ATS; requires human review |
@@ -60,6 +61,11 @@ Employer registration remains explicit and performs no network/database access:
 `internship-agent list-sources` inspects the local registry. Optional
 `--careers-url`, `--employer-id` and `--disabled` support reviewed metadata and
 verified board linking. See [registry configuration and compatibility](docs/EMPLOYER_REGISTRY.md).
+
+`internship-agent source-health`, `internship-agent scans` and
+`internship-agent availability` inspect local discovery evidence read-only.
+Discovery respects retry times and bounded page/source budgets; see
+[recovery, migrations and availability policy](docs/DISCOVERY_LIFECYCLE.md).
 
 The demo creates `demo-output/` containing a fictional three-job database, ranking summary and DOCX resume/letter. It does not authenticate, search real jobs, submit forms, or send email. **Never use the synthetic profile as your real resume.**
 
@@ -125,7 +131,7 @@ The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operat
 ## Roadmap
 
 1. Multi-provider ATS validation and employer registry are implemented in Issue #9;
-   incremental scans, health and conservative posting lifecycle remain Issue #10
+   Issue #10 adds durable incremental scans, health and conservative posting evidence
    ([scope and handoff](docs/NEXT_ENGINEERING_PR.md)).
 2. Verified profile/eligibility, explainable ranking and document QA.
 3. Recoverable local preparation/tracking, then Windows scheduling and dashboard.

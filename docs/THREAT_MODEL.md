@@ -27,6 +27,8 @@ or installed service. Merging code does not authorize runtime activation.
 | Provider/admin/DB access through proxy | One fixed loopback upstream/realm, no generic proxy or folder mount, no admin/master/account/management routes; Keycloak local cache avoids LAN cluster listeners; PostgreSQL restricted to loopback | Trusted local configuration and OS account/ACLs remain required; provider security updates and backups are operator responsibilities |
 | MCP mutation or file exfiltration | Exactly three read-only tools; existing SQLite opened `mode=ro` / `query_only`; no Google, approval, submission, generation or arbitrary file tools | Local process/host must be trusted. Selected results are shared with the client, and job text remains untrusted |
 | Source/platform terms | Public feeds and authorized imports only | Operator is responsible for source-specific restrictions and rate limits |
+| Discovery interruption or false closure | Versioned additive SQLite state, fenced five-minute leases, atomic page/job/evidence/cursor commits; durable backoff and safe errors; missing listings never close jobs | Offset snapshots can reorder; only explicit passed Greenhouse deadlines confirm closure; no distributed scheduling or retention purge |
+| URL-based history loss | Existing posting IDs remain authoritative; shared canonical URLs produce review candidates without merging new records or application outcomes | Earlier destructive merges cannot be reconstructed without source evidence |
 
 ## Release checklist
 

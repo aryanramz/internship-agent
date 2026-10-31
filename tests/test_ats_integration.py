@@ -59,7 +59,7 @@ def ok(payload):
 def test_replay_ingests_plain_text_dates_and_distinct_requisitions(monkeypatch, payload, discovery):
     replay(monkeypatch, [ok(payload)])
     agent, config = discovery
-    result = agent.discover(config)
+    result = agent.discover(config, refresh=True)
     assert result["errors"] == []
     assert result["added"] == 2
     rows = {j["source_id"]: j for j in agent.store.list_jobs()}
@@ -77,11 +77,11 @@ def test_repeat_discovery_updates_without_duplicate_applications(monkeypatch, pa
     changed["jobs"][0]["content"] = "&lt;p&gt;Updated skills.&lt;/p&gt;"
     replay(monkeypatch, [ok(payload), ok(changed)])
     agent, config = discovery
-    assert agent.discover(config)["added"] == 2
+    assert agent.discover(config, refresh=True)["added"] == 2
     original = {r["id"] for r in agent.store.list_jobs()}
     jid = next(r["id"] for r in agent.store.list_jobs() if r["source_id"] == "1001")
     agent.store.set_prepared(jid, "synthetic-resume.docx", "synthetic-letter.docx")
-    result = agent.discover(config)
+    result = agent.discover(config, refresh=True)
     assert (result["added"], result["updated"], result["duplicate"]) == (0, 2, 0)
     assert {r["id"] for r in agent.store.list_jobs()} == original
     assert agent.store.get_job(jid)["status"] == "prepared"
@@ -98,7 +98,7 @@ def test_http_failures_are_explicit_and_do_not_follow_redirects(monkeypatch, dis
     replay(monkeypatch, [(status, b"untrusted private response", {
         "Location": "https://internal.local/private", "Retry-After": "120"})])
     agent, config = discovery
-    result = agent.discover(config)
+    result = agent.discover(config, refresh=True)
     assert result["added"] == 0
     assert result["errors"][0]["code"] == code
     assert result["errors"][0]["http_status"] == status
@@ -112,7 +112,7 @@ def test_http_failures_are_explicit_and_do_not_follow_redirects(monkeypatch, dis
 def test_schema_errors_do_not_masquerade_as_empty_boards(monkeypatch, discovery, bad_payload):
     replay(monkeypatch, [ok(bad_payload)])
     agent, config = discovery
-    result = agent.discover(config)
+    result = agent.discover(config, refresh=True)
     assert result["errors"][0]["code"] == "invalid_payload"
     assert result["by_source"] == []
 
@@ -125,7 +125,7 @@ def test_invalid_posting_aborts_board_without_partial_writes(monkeypatch, payloa
     payload["jobs"][1].update(patch)
     replay(monkeypatch, [ok(payload)])
     agent, config = discovery
-    result = agent.discover(config)
+    result = agent.discover(config, refresh=True)
     assert result["errors"][0]["code"] == "invalid_posting"
     assert agent.store.list_jobs() == []
 
@@ -134,7 +134,7 @@ def test_expired_deadlines_are_not_ingested(monkeypatch, payload, discovery):
     payload["jobs"][0]["application_deadline"] = "2000-01-01T01:00:00+01:00"
     replay(monkeypatch, [ok(payload)])
     agent, config = discovery
-    assert agent.discover(config)["added"] == 1
+    assert agent.discover(config, refresh=True)["added"] == 1
     assert [r["source_id"] for r in agent.store.list_jobs()] == ["1002"]
 
 
@@ -144,7 +144,7 @@ def test_expired_deadlines_are_not_ingested(monkeypatch, payload, discovery):
 def test_invalid_json_and_network_errors_are_safely_reported(monkeypatch, discovery, body, code):
     replay(monkeypatch, [(200, body, {})])
     agent, config = discovery
-    result = agent.discover(config)
+    result = agent.discover(config, refresh=True)
     assert result["errors"][0]["code"] == code
     assert "private" not in json.dumps(result)
 
@@ -153,7 +153,7 @@ def test_response_size_is_bounded(monkeypatch, discovery):
     monkeypatch.setattr(sources, "MAX_BYTES", 40)
     replay(monkeypatch, [(200, b"x" * 41, {})])
     agent, config = discovery
-    assert agent.discover(config)["errors"][0]["code"] == "response_too_large"
+    assert agent.discover(config, refresh=True)["errors"][0]["code"] == "response_too_large"
 
 
 @pytest.mark.parametrize("header,expected", [
@@ -163,7 +163,7 @@ def test_response_size_is_bounded(monkeypatch, discovery):
 def test_retry_after_dates_are_normalized_and_invalid_headers_omitted(monkeypatch, discovery, header, expected):
     replay(monkeypatch, [(429, b"", {"Retry-After": header})])
     agent, config = discovery
-    error = agent.discover(config)["errors"][0]
+    error = agent.discover(config, refresh=True)["errors"][0]
     assert error["code"] == "rate_limited"
     assert error.get("retry_after") == expected
     assert "private" not in json.dumps(error)
@@ -173,11 +173,11 @@ def test_failed_board_preserves_ledger_and_later_boards_still_run(monkeypatch, p
     replay(monkeypatch, [ok(payload), (410, b"", {}), ok({"jobs": []})],
            extra_endpoints=(ENDPOINT.replace("/example/", "/other-example/"),))
     agent, config = discovery
-    assert agent.discover(config)["added"] == 2
+    assert agent.discover(config, refresh=True)["added"] == 2
     jid = agent.store.list_jobs()[0]["id"]
     agent.store.set_prepared(jid, "synthetic-resume.docx", "synthetic-letter.docx")
     Path(config).write_text(json.dumps({"boards": [BOARD, {**BOARD, "token": "other-example"}]}), encoding="utf-8")
-    result = agent.discover(config)
+    result = agent.discover(config, refresh=True)
     assert len(result["errors"]) == 1
     assert len(result["by_source"]) == 1
     assert result["by_source"][0]["retrieved"] == 0

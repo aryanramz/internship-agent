@@ -1,15 +1,33 @@
 from __future__ import annotations
 import json
+import hashlib
+import re
+from datetime import datetime, timezone
 from pathlib import Path
-from .sources import retrieve_board, normalize, SUPPORTED, SourceError
+from .sources import retrieve_page, normalize, SUPPORTED, AGGREGATORS, SourceError
 from .scoring import evaluate
 from .documents import create_documents,tailoring_report
 from .store import Store
 from .models import validate_board
 from .registry import board_identity, load_registry, read_configuration, registry_entry, register_sources
 
+
+def discovery_source_id(board, config_root="."):
+    """Opaque source namespace binds checkpoints to reader identity and filters."""
+    clean = validate_board(board)
+    filters = {"intern_only": clean.get("intern_only", clean["provider"] in AGGREGATORS)}
+    if clean["provider"] == "workday":
+        filters["search_terms"] = clean["search_terms"]
+    if clean["provider"] == "usajobs":
+        filters["keyword"] = clean["keyword"]
+    if clean["provider"] in {"csv_import", "json_import"}:
+        filters["resolved_path"] = str((Path(config_root) / clean["path"]).resolve())
+    value = json.dumps([board_identity(clean), filters], sort_keys=True)
+    return hashlib.sha256(value.encode()).hexdigest()[:24]
+
+
 class Agent:
-    def __init__(self, root: str, *, credentials_dir: str | None = None, read_only: bool = False):
+    def __init__(self, root: str, *, credentials_dir: str | None = None, read_only: bool = False, clock=None):
         from .integrations.google_auth import credential_directory
         self._credentials_override=credentials_dir
         self.credentials_dir=credential_directory(credentials_dir)
@@ -17,6 +35,7 @@ class Agent:
         if not read_only:
             self.root.mkdir(parents=True,exist_ok=True)
         self.store=Store(str(self.root/"agent.db"),read_only=read_only)
+        self.clock = clock or (lambda: datetime.now(timezone.utc))
         self.legacy_credential_dirs=(self.root/"secrets",Path("data/secrets").resolve())
 
     def load_profile(self, profile_path: str) -> dict:
@@ -25,11 +44,20 @@ class Agent:
         if not isinstance(value,dict):raise ValueError("Profile must be JSON object")
         return value
 
-    def discover(self, sources_path: str) -> dict:
+    def discover(self, sources_path: str, *, refresh=False, max_pages=3, max_sources=20) -> dict:
+        from .discovery_state import DiscoveryState
+        if type(max_pages) is not int or not 1 <= max_pages <= 5 or type(max_sources) is not int or not 1 <= max_sources <= 100:
+            raise ValueError("Discovery requires 1–5 pages and 1–100 sources per invocation")
+        if type(refresh) is not bool:
+            raise ValueError("Refresh must be boolean")
         source=read_configuration(sources_path)
-        summary={"added":0,"updated":0,"duplicate":0,"errors":[],"by_source":[]}
+        state = DiscoveryState(self.store, clock=self.clock)
+        summary={"added":0,"updated":0,"duplicate":0,"errors":[],"by_source":[],"skipped":[]}
+        config_root = str(Path(sources_path).resolve().parent.parent)
         seen=set()
+        attempted = 0
         for entry in source.get("boards",[]):
+            run = None
             try:
                 entry=registry_entry(entry)
                 if not entry["enabled"]:
@@ -38,21 +66,53 @@ class Agent:
                 if identity in seen:
                     raise ValueError("Duplicate configured board; discovery skipped this entry")
                 seen.add(identity)
-                jobs=retrieve_board(entry, str(Path(sources_path).resolve().parent.parent))
-                counts={"provider":entry["provider"],"company":entry["company"],"retrieved":len(jobs),"added":0,"updated":0,"duplicate":0}
-                for job in jobs:
-                    outcome=self.store.upsert_job(job)
-                    summary[outcome]+=1
-                    counts[outcome]+=1
-                summary["by_source"].append(counts)
+                source_id = discovery_source_id(entry, config_root)
+                if attempted >= max_sources:
+                    summary["skipped"].append({"source_id": source_id, "skip_reason": "work_budget"})
+                    continue
+                run = state.begin(source_id, entry["provider"], self.clock(), refresh=refresh)
+                if run.get("skip_reason"):
+                    summary["skipped"].append(run)
+                    continue
+                attempted += 1
+                counts={"provider":entry["provider"],"company":entry["company"],"source_id":source_id,
+                        "run_id":run["run_id"],"retrieved":0,"added":0,"updated":0,"duplicate":0}
+                cursor = run.get("cursor")
+                for _ in range(max_pages):
+                    page = retrieve_page(entry, config_root, cursor, now=self.clock())
+                    outcomes = state.commit_page(run["run_id"], page, self.clock())
+                    if counts not in summary["by_source"]:
+                        summary["by_source"].append(counts)
+                    counts["retrieved"] += len(page.jobs)
+                    for outcome in ("added", "updated", "duplicate"):
+                        counts[outcome] += outcomes[outcome]
+                        summary[outcome] += outcomes[outcome]
+                    counts["complete"] = page.complete
+                    cursor = page.next_cursor
+                    if cursor is None:
+                        if not page.complete:
+                            state.pause(run["run_id"], self.clock())
+                        break
+                else:
+                    if cursor is not None:
+                        state.pause(run["run_id"], self.clock())
             except Exception as exc:
-                error={"board":entry.get("company","unknown") if isinstance(entry,dict) else "unknown","error":str(exc)[:250]}
+                code = exc.code if isinstance(exc, SourceError) else "invalid_configuration" if isinstance(exc, ValueError) else "internal_error"
+                if not isinstance(code, str) or not re.fullmatch(r"[a-z_]{1,40}", code):
+                    code = "source_error"
+                error={"board":entry.get("company","unknown") if isinstance(entry,dict) else "unknown",
+                       "error":"Discovery failed; review source-health and local source configuration.", "code":code}
                 if isinstance(exc, SourceError):
-                    error["code"]=exc.code
                     if exc.http_status is not None:
                         error["http_status"]=exc.http_status
                     if exc.retry_after:
                         error["retry_after"]=exc.retry_after
+                if run is not None and run.get("run_id"):
+                    try:
+                        state.fail(run["run_id"], code, self.clock(), retry_after=error.get("retry_after", ""),
+                                   http_status=error.get("http_status"))
+                    except ValueError:
+                        error["state_error"] = "lease_lost"
                 summary["errors"].append(error)
         return summary
 
@@ -69,7 +129,8 @@ class Agent:
         config=load_registry(sources_file,missing_ok=True)
         configured={board_identity(i) for i in config["boards"]}
         discovered={}
-        for record in self.store.list_jobs(10000):
+        inspected = self.store.list_jobs(1000)
+        for record in inspected:
             try:
                 board=registry_entry(detect_source(record["job_url"],record["company"]))
                 board["provenance"]={"method":"suggested","url":board["board_url"]}
@@ -82,7 +143,8 @@ class Agent:
         if apply and suggestions:
             register_sources(sources_file,suggestions)
         return {"available":len(discovered),"shown":len(suggestions),"registered":len(suggestions) if apply else 0,
-                "sources":suggestions,"note":"Registration does not fetch postings until the next discover run."}
+                "inspected":len(inspected),"inspection_limit":1000,
+                "sources":suggestions,"note":"Suggestions cover at most 1000 recent ingested jobs; registration does not fetch postings."}
 
     def import_external_jobs(self, records: list[dict]) -> dict:
         """Ingest real leads extracted through an authorized ChatGPT connector or exported file.

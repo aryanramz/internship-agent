@@ -19,6 +19,11 @@ source. This unrelated runtime change is excluded from the next ATS/registry PR.
 Backward-incompatible local schemas/interfaces require an explicit pre-1.0 minor
 change plus migration/rollback notes; compatible fixes use patches.
 
+Issues #9/#10 provide the R1 discovery engineering evidence; see
+[discovery qualification and recovery](DISCOVERY_LIFECYCLE.md). They do not publish
+a release. Version alignment, clean-package qualification and release-preparation
+review remain outstanding before claiming the full publication gate is satisfied.
+
 ## Release gates
 
 Every row also requires the common checks below. Versions are recommendations,

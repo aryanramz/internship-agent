@@ -58,7 +58,11 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(self.store.upsert_job(j2),"added")
         self.assertEqual(len(self.store.list_jobs()),2)
         j3=job("102",url="https://boards.greenhouse.io/acme/jobs/101?utm_source=mail")
-        self.assertEqual(self.store.upsert_job(j3),"duplicate")
+        self.assertEqual(self.store.upsert_job(j3),"added")
+        self.assertEqual(len(self.store.list_jobs()),3)
+        # Tracking variants update the same requisition, never discard a new ID.
+        self.assertEqual(self.store.upsert_job(job("101",url=j3.job_url)),"updated")
+        self.assertEqual(len(self.store.list_jobs()),3)
     def test_ranking_is_explainable(self):
         value=evaluate(self.j.to_dict(),PROFILE)
         self.assertGreaterEqual(value["score"],65)

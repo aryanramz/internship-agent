@@ -4,6 +4,7 @@ The project follows pre-1.0 semantic versioning. Earlier releases are preserved 
 
 ## Unreleased
 
+- Added versioned additive discovery state, atomic page/checkpoint transactions, fenced restart recovery, bounded SmartRecruiters pagination, durable source health/backoff and read-only CLI reports. Availability evidence is separate from application outcomes; only explicit Greenhouse deadlines confirm closure. Distinct incoming IDs sharing URLs are retained as reviewable canonical matches. No scheduler, MCP expansion, Google mutation or release publication.
 - Qualified public Greenhouse, Lever and Ashby ingestion/repeats with isolated preparation/approval history; preserved unknown Lever publication dates and fixed lost closing/section text. Reject malformed Lever/Ashby snapshots and unsafe ATS links before ingestion.
 - Added a backward-compatible employer registry, explicit idempotent/atomic registration, metadata-only validation/provenance, no-network/database CLI inspection, namespace-safe duplicate handling and private registry/temp-file guards. No SQLite/job-ID/MCP capability changes; source health/lifecycle remains Issue #10.
 - Integrated the prepared loopback HTTPS-identity/OAuth gateway and Windows controls with the revised master roadmap. Preserved strict owner/resource JWT checks, three read-only tools, browser cookie isolation and all local-only activation gates; no services, endpoints or dependencies were installed by merging code.

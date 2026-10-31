@@ -124,7 +124,7 @@ class Robustness(unittest.TestCase):
         self.assertNotEqual(a,b)
         self.assertNotIn("utm_",a)
 
-    def test_direct_employer_enriches_community_duplicate(self):
+    def test_direct_employer_keeps_community_representation_reviewable(self):
         from internship_agent.store import Store
         from internship_agent.models import Job, stable_id
         with tempfile.TemporaryDirectory() as root:
@@ -133,9 +133,12 @@ class Robustness(unittest.TestCase):
             first=Job(id=stable_id("simplify_github","summer2027","1"),provider="simplify_github",source_id="1",description="",**base)
             second=Job(id=stable_id("greenhouse","acme","123"),provider="greenhouse",source_id="123",description="AWS IAM Terraform skills required",**base)
             self.assertEqual(store.upsert_job(first),"added")
-            self.assertEqual(store.upsert_job(second),"duplicate")
-            self.assertEqual(len(store.list_jobs()),1)
-            self.assertIn("Terraform",store.list_jobs()[0]["description"])
+            self.assertEqual(store.upsert_job(second),"added")
+            self.assertEqual(len(store.list_jobs()),2)
+            self.assertIn("Terraform",store.get_job(second.id)["description"])
+            self.assertEqual(store.get_job(first.id)["description"],"")
+            from internship_agent.discovery_state import DiscoveryState
+            self.assertEqual(DiscoveryState(store).availability(first.id)[0]["canonical_matches"],[second.id])
 
     def test_connector_import(self):
         from internship_agent.service import Agent
