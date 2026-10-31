@@ -129,6 +129,11 @@ def _parse_clause(text, strength, evidence, term, term_evidence):
         if constraint["op"] in {"one_of", "date_range"}:
             alternative_spans.append(span)
 
+    # Exceptions and conditions change the applicability of the predicate.
+    # A matched fragment cannot be enforced while its scope remains unresolved.
+    if re.search(r"\b(?:if|unless|except|provided|depending|conditional|subject to)\b", text, re.I):
+        return [_manual(strength, evidence, "unsupported_conditional_scope")]
+
     # A scoped waiver conveys no positive requirement. Mixed material remains
     # visible rather than allowing a waiver to negate an unrelated hard clause.
     waiver = re.search(r"\b(?:not required|not necessary|no (?:\w+\s+){0,4}(?:required|necessary)|do(?:es)? not require|no need (?:for|to))\b", text, re.I)
@@ -186,9 +191,16 @@ def _parse_clause(text, strength, evidence, term, term_evidence):
     if degree_matches:
         prefix = text[:degree_matches[0].start()]
         bound = re.search(r"\b(?:enrolled\s+in|pursuing|working\s+towards?|(?:have\s+)?completed|earned|hold|holds|have|possess)\s+(?:(?:an?|the|current|accredited|full[- ]time)\s+)*$", prefix, re.I)
-        if bound and re.search(r"\b(?:enrolled|pursuing|working)\b", bound[0], re.I) and not any(rule["kind"] == "enrolled" for rule in out):
-            bound = None
-        bound = bound or re.search(r"\b(?:must|shall)\s+be\s+(?:an?\s+)?(?:current\s+)?$", prefix, re.I)
+        if bound:
+            if re.search(r"\b(?:enrolled|pursuing|working)\b", bound[0], re.I):
+                if not any(rule["kind"] == "enrolled" for rule in out):
+                    bound = None
+            elif not _candidate_prefix(prefix[:bound.start()]):
+                bound = None
+        direct = re.search(r"\b(?:must|shall)\s+be\s+(?:an?\s+)?(?:current\s+)?$", prefix, re.I)
+        if direct and not _candidate_prefix(prefix[:direct.start()]):
+            direct = None
+        bound = bound or direct
         bound = bound or re.fullmatch(r"\s*(?:(?:an?|minimum|required|current)\s+)*", prefix, re.I)
         if not bound:
             return [_manual(strength, evidence, "unbound_education_reference")]
@@ -334,6 +346,11 @@ def _parse_clause(text, strength, evidence, term, term_evidence):
     for start, end in covered:
         residual[start:end] = " " * (end - start)
     remaining = "".join(residual)
+    current_fields = {"enrolled","degree_level","completed_degrees","academic_year",
+                      "completed_academic_years","work_authorized","needs_sponsorship","residence_country"}
+    dated_scope = re.search(r"\b(?:by|before|after|during|until|throughout|starting|as of)\b|\bat\s+(?:the\s+)?(?:start|end|beginning|commencement)\b|\b(?:in|for)\s+(?:spring|summer|fall|autumn|winter)\b", remaining, re.I)
+    if dated_scope and any(rule["kind"] in current_fields for rule in out):
+        return [_manual(strength, evidence, "unsupported_predicate_time_scope")]
     remaining = re.sub(r"\b(?:must|required|requirements?|minimum|qualifications?|candidates?|applicants?|students?|you|we|are|is|be|being|have|has|hold|holds|an?|the|in|at|of|to|for|and|or|either|both|degree|degrees|program|programs|currently|presently|expected|with|as|from|will|should|shall|need|needs|not|completed|earned|possess)\b", " ", remaining, flags=re.I)
     if re.search(r"[a-z0-9]", remaining, re.I) or not out:
         out.append(_manual(strength, evidence, "unsupported_or_ambiguous_requirement"))

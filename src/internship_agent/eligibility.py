@@ -217,6 +217,19 @@ def _evaluate_leaf(node, candidate, as_of, conflicts):
     if not known:
         result["missing_facts"] = [node["kind"]]
         return finish("unknown","No applicable, explicitly verified candidate fact is available.")
+    if node["kind"] == "availability" and node["constraint"]["op"] == "interval":
+        required = node["constraint"]["value"]
+        intervals = [(f,max(required["start"],f["qualifiers"]["start"]),
+                      min(required["end"],f["qualifiers"]["end"])) for f in known
+                     if {"start","end"} <= f["qualifiers"].keys()]
+        disagree = set()
+        for index,(first,start,end) in enumerate(intervals):
+            for second,other_start,other_end in intervals[index+1:]:
+                if first["value"] != second["value"] and max(start,other_start) <= min(end,other_end):
+                    disagree.update((first["id"],second["id"]))
+        if disagree:
+            result["conflicts"].append({"fact_ids":sorted(disagree),"reason":"Verified availability declarations disagree over a required interval."})
+            return finish("unknown","Applicable verified availability declarations overlap and disagree.")
     if node["kind"] in {"availability","returning_student"}:
         applicable = [f for f in known if _period_compare(f,node) != "unknown"]
     else:

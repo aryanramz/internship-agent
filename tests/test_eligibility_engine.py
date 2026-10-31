@@ -133,6 +133,19 @@ def test_numeric_alternative_conflicts_and_nested_or_conjunctions_are_uncertain(
     assert assess(profile(fact("degree_level","bachelor"),fact("enrolled",False)),choice)["outcome"] == "uncertain"
 
 
+@pytest.mark.parametrize("positive_end,negative_start,expected",[
+    ("2030-07-31","2030-06-15","uncertain"),
+    ("2030-06-14","2030-06-15","ineligible"),
+])
+def test_partial_positive_availability_conflicts_only_on_overlap(positive_end,negative_start,expected):
+    report = assess(profile(
+        fact("availability",True,id="positive",qualifiers={"start":"2030-06-01","end":positive_end}),
+        fact("availability",False,id="negative",qualifiers={"start":negative_start,"end":"2030-06-30"})),
+        requirement("availability","interval",{"start":"2030-06-01","end":"2030-08-31"}))
+    assert report["outcome"] == expected
+    assert bool(report["conflicts"]) == (expected == "uncertain")
+
+
 @pytest.mark.parametrize("graduation,op,bound,expected", [
     ("2031-05-15","gte","2031-05-15","eligible"),
     ("2031-05-15","gt","2031-05-15","ineligible"),

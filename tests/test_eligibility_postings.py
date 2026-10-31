@@ -59,3 +59,32 @@ def test_posting_instructions_are_inert_data(tmp_path):
     report = evaluate_eligibility(candidate(enrolled=True),{"title":"Intern","description":text},as_of=date(2030,1,15))
     assert report["outcome"] == "uncertain"
     assert not marker.exists()
+
+
+@pytest.mark.parametrize("text", [
+    "Must be enrolled unless you graduated within the last year.",
+    "Must be enrolled if applying to our student track.",
+    "Must be enrolled by the start of the internship.",
+    "Must be enrolled during summer 2030.",
+    "Must be enrolled at the end of the internship.",
+    "Must be enrolled except for recent graduates.",
+])
+def test_unsupported_conditional_or_dated_enrollment_cannot_reject_current_fact(text):
+    report = evaluate_eligibility(candidate(enrolled=False),{"title":"Intern","description":text},as_of=date(2030,1,15))
+    assert report["outcome"] == "uncertain"
+
+
+@pytest.mark.parametrize("text",[
+    "Candidates must verify that students have completed a bachelor's degree.",
+    "Must ensure employees have a bachelor's degree.",
+])
+def test_completed_degree_about_someone_else_is_not_candidate_requirement(text):
+    report = evaluate_eligibility(candidate(completed_degrees=[]),{"title":"Intern","description":text},as_of=date(2030,1,15))
+    assert report["outcome"] == "uncertain"
+
+
+def test_independent_clear_failure_still_blocks_when_another_clause_is_conditional():
+    report = evaluate_eligibility(candidate(enrolled=False,academic_year=1),{
+        "title":"Intern","description":"Must be enrolled unless you recently graduated.\nMust be a senior."},
+        as_of=date(2030,1,15))
+    assert report["outcome"] == "ineligible"

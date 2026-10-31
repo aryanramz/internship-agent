@@ -156,11 +156,16 @@ returning-student declaration must refer to that term. Availability over an exac
 date interval passes only with complete positive coverage; partial positive
 coverage is uncertain, while an explicit unavailable overlap conflicts. Separate
 positive intervals are not automatically joined.
+Contrary verified intervals that overlap within the required dates are reported
+as conflicting even when the positive interval covers only part of the internship.
 
 Current degree level and completed degrees are separate. Explicit simple accepted
 degree/major alternatives are OR; mandatory independent requirements are AND.
 Only a small documented-in-code major alias set is normalized; unfamiliar field
 names remain uncertain. Skills/coursework lists are not assumed exhaustive.
+Unsupported conditions/exceptions and future-qualified status predicates remain
+manual review rather than enforcing a current fragment of the sentence. A
+separate, clearly established mandatory failure still makes the result ineligible.
 Work mode is compared separately from work location and residence country;
 remote does not waive geographical restrictions. Unrecognized location spelling
 or missing location information remains uncertain.
