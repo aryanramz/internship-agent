@@ -84,7 +84,7 @@ def _repair_job_namespace(connection):
     tables = connection.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
     for table in tables:
         for fk in connection.execute('SELECT "table",on_delete FROM pragma_foreign_key_list(?)', (table[0],)):
-            if fk[0] == 'jobs' and fk[1] != 'NO ACTION':
+            if fk[0].lower() == 'jobs' and fk[1] != 'NO ACTION':
                 raise ValueError('Custom job delete actions require a separately reviewed migration')
     extensions = connection.execute("SELECT sql FROM sqlite_master WHERE tbl_name='jobs' AND type IN ('index','trigger') AND sql IS NOT NULL").fetchall()
     deferred = connection.execute('PRAGMA defer_foreign_keys').fetchone()[0]

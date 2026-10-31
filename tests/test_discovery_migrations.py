@@ -144,9 +144,11 @@ def test_version_one_upgrade_preserves_discovery_evidence_and_custom_trigger(tmp
         assert upgraded.execute("PRAGMA user_version").fetchone()[0] == 2
 
 
-def test_custom_delete_cascade_fails_without_mutating_any_history(tmp_path):
+@pytest.mark.parametrize("target", ["jobs", "JOBS", "Jobs"])
+@pytest.mark.parametrize("action", ["CASCADE", "SET NULL"])
+def test_custom_delete_actions_fail_without_mutating_any_history(tmp_path, target, action):
     c, jid = legacy(tmp_path / "custom.db")
-    c.execute("CREATE TABLE custom_history(job_id TEXT REFERENCES jobs(id) ON DELETE CASCADE)")
+    c.execute(f"CREATE TABLE custom_history(job_id TEXT REFERENCES {target}(id) ON DELETE {action})")
     c.execute("INSERT INTO custom_history VALUES(?)", (jid,))
     c.commit()
     before = snapshot(c)
