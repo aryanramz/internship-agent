@@ -33,9 +33,11 @@ grant authorization or establish evidence of an external application.
 
 Issue #9 implements Greenhouse/Lever/Ashby validation and the compatible employer
 registry. Issue #10 adds durable incremental health/lifecycle; see
-`docs/DISCOVERY_LIFECYCLE.md`. The next engineering scope after acceptance is #11,
-which owns
-structured eligibility. Do not start them as incidental scope. Issue #3 is an independent optional-interface track and
+`docs/DISCOVERY_LIFECYCLE.md`. Issue #11 adds [structured local eligibility](docs/ELIGIBILITY.md)
+and private versioned declarations without a database migration or MCP expansion.
+The next engineering scope after its acceptance is #12, explainable ranking,
+taxonomy and preferences; do not start it as incidental eligibility work.
+Issue #3 is an independent optional-interface track and
 stays open until an actual authenticated ChatGPT invocation succeeds.
 
 This revision includes PR #8's prepared gateway/identity-startup code and local
@@ -51,6 +53,7 @@ do not bump versions or claim release completion from historical phase labels.
 - `discovery_types.py` / `discovery_state.py`: bounded pages, additive migration, fenced recovery, durable retry rules and independent posting evidence; never application outcomes
 - `models.py` / `store.py`: durable job and application state
 - `scoring.py`: deterministic ranking and eligibility warnings
+- `eligibility_profile.py` / `eligibility_requirements.py` / `eligibility.py`: private versioned facts, evidence-anchored requirements and pure local three-state assessment; separate from fit and legal decisions
 - `documents.py`: factual resume/cover-letter drafting
 - `integrations/`: optional Google OAuth, alert parsing, Sheets synchronization
 - `mcp_server.py`: three read-only stdio tools; `mcp_http.py`: strict JWT/HTTP adapter; `mcp_gateway*.py`: reviewed-route preparation, still loopback-bound with Funnel activation gated

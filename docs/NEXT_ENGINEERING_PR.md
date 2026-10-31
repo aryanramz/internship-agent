@@ -1,75 +1,59 @@
-# Discovery engineering and next-engineering handoff
+# Next engineering handoff — explainable ranking
 
-[Issue #9](https://github.com/aryanramz/internship-agent/issues/9), gate R1 Part 1,
-is implemented in the ATS/registry work session; [live evidence](LIVE_ATS_VALIDATION.md)
-and [registry compatibility](EMPLOYER_REGISTRY.md) record its acceptance.
-The contract below is retained for review/history. Issue #10 subsequently adds
-[incremental discovery/checkpoints, health/backoff and conservative posting evidence](DISCOVERY_LIFECYCLE.md).
-After its acceptance the next engineering scope is
-[Issue #11](https://github.com/aryanramz/internship-agent/issues/11): structured
-verified candidate facts and eligibility. Start a separate reviewed branch;
-eligibility/ranking/document changes are not incidental discovery work.
+[Issue #9](https://github.com/aryanramz/internship-agent/issues/9) implements
+three-provider ATS qualification and the compatible employer registry;
+[live evidence](LIVE_ATS_VALIDATION.md) and
+[registry compatibility](EMPLOYER_REGISTRY.md) record its scope.
+[Issue #10](https://github.com/aryanramz/internship-agent/issues/10) implements
+[incremental discovery, health/backoff and conservative availability](DISCOVERY_LIFECYCLE.md).
+R1 engineering acceptance is separate from formal release preparation/publication.
 
-## Objective
+This revision implements [Issue #11](https://github.com/aryanramz/internship-agent/issues/11):
+[private versioned facts and evidence-backed structured eligibility](ELIGIBILITY.md).
+After its acceptance, the next engineering scope is
+[Issue #12](https://github.com/aryanramz/internship-agent/issues/12), explainable
+ranking, taxonomy and user preferences. It has **not** been started by the
+eligibility implementation. Read the current issue and its dependencies before
+opening a separate branch from the latest accepted `develop`.
 
-Qualify existing Greenhouse, Lever and Ashby readers against current permitted
-public endpoints. Add a backward-compatible employer/ATS registry around current
-`boards`, `add-source` and `suggest-sources` behavior. Preserve Greenhouse fixes
-and application IDs/status/events. Do not rebuild the backend or wait for MCP.
+## Boundary to preserve
 
-## Scope
+- SQLite remains the authoritative application ledger. Preserve posting IDs,
+  schema version, discovery checkpoints, availability evidence, application
+  states and events; source availability is not an application outcome.
+- Existing `scoring.py` weights, score components, sorting and default `rank`
+  output remain the compatibility baseline. Issue #11 changes none of these.
+- Structured `eligible`/`uncertain`/`ineligible` is separate from fit. A high fit
+  score cannot override a failed mandatory eligibility rule. Missing or
+  unverified candidate information must not become a definite negative.
+- Preserve private profile v2 facts and provenance and legacy profile behavior.
+  Do not infer sensitive/legal facts or expose declarations through MCP.
+- Keep MCP's exact three read-only tools and minimal default projections. Full
+  eligibility facts/evidence are local-only reports; consequential actions retain
+  explicit approval requirements.
+- Ranking evaluation uses fictional fixtures, stable clocks, explicit evidence
+  and offline tests; do not invent accuracy or hiring-probability metrics.
 
-1. Inspect current primary API documentation and choose one permitted public,
-   credential-free board per provider. Record provenance/date and a bounded
-   request policy before exercising it. Do not publish raw live payload dumps.
-2. Verify actual responses, dates/descriptions, canonical job/apply URLs, stable
-   IDs and repeat ingestion. Identify reused versus fresh Greenhouse evidence.
-   An unavailable provider is a documented blocker, not a passed gate.
-3. Fix demonstrated transport/normalization incompatibilities only. Retain HTTPS,
-   public-host validation, refused redirects, bounded reads, structured failures
-   and per-board isolation. Respect 429/Retry-After; no blind retries or request
-   escalation to force success.
-4. Define employer identity, provider/token/site, public board URL, provenance,
-   enabled state and validation evidence. Extend existing configuration; SQLite
-   remains the application ledger. Old source JSON must remain usable. Public
-   examples stay fictional; operational registry files remain local/private.
-5. Repeated registration is idempotent; invalid/duplicate records are actionable.
-   Preserve preview/explicit registration: detecting/registering a board does
-   not itself fetch it.
-6. Update source coverage and dated evidence without claiming all-reader coverage.
+## Existing foundations
 
-## Existing files to reuse
-
-| Concern | Files |
+| Concern | Files / guidance |
 |---|---|
-| URLs, transport, normalization | `src/internship_agent/sources.py` |
-| Detection/configuration | `src/internship_agent/source_detection.py`, `models.py`, `config/sources.example.json` |
-| Orchestration/registration | `src/internship_agent/service.py`, `cli.py` |
-| Identity/history | `src/internship_agent/models.py`, `store.py` |
-| Tests | `tests/test_ats_integration.py`, `test_ats_live.py`, `test_sources_v02.py` |
-| Evidence | `docs/LIVE_ATS_VALIDATION.md`, `SOURCE_MATRIX.md`, `CAPABILITIES.md` |
+| Current fit behavior | `src/internship_agent/scoring.py`, `service.py`, `cli.py` |
+| Private candidate facts | `src/internship_agent/eligibility_profile.py`, [schema](ELIGIBILITY.md) |
+| Requirement/evaluation boundary | `src/internship_agent/eligibility_requirements.py`, `eligibility.py` |
+| Compatibility tests | `tests/test_agent.py`, eligibility integration/posting tests, MCP read-only tests |
+| Scope and release dependencies | [Roadmap](ROADMAP.md), [capabilities](CAPABILITIES.md), [release gates](RELEASE_PLAN.md) |
 
-Abbreviated module names are under `src/internship_agent/`, tests under `tests/`
-and documentation under `docs/`.
+## Exclusions
 
-## Acceptance and tests
+Issue #13 owns document variants and claim QA; #14 owns recoverable application
+workflow and document-bound approvals; #15–#20 own later scheduling, interfaces,
+browser/recruiter workflows, analytics and cloud decisions. Do not fold them into
+ranking changes. R2 requires #11–#13 plus release preparation; #11 alone does not
+complete it. No version bump or release is implied.
 
-- Dated bounded live evidence for all three providers, with explicit limitations.
-  Live discovery stays opt-in and skipped in ordinary CI.
-- Synthetic HTTP replays per provider: success, empty/malformed snapshots, 404,
-  429, redirect rejection and transport failure through reader/Agent/isolated DB.
-- Repeat ingestion adds no duplicate applications and preserves prepared/approved
-  states, distinct requisitions and historical events.
-- Registry round-trip, old boards JSON compatibility, invalid/duplicate entries,
-  enabled flags/provenance and registration-without-fetch are covered.
-- Full offline suite, compilation, privacy/diff and appropriate network/security
-  checks pass. Report skipped/blocked criteria. No credentials, private registry,
-  personal database or raw live payload is committed.
-
-## Exclusions and following work
-
-No new provider families, broad crawler, cross-source lifecycle redesign, durable
-scan health/checkpoints, closure inference, scheduling/dashboard, eligibility,
-ranking/documents, runtime version cleanup, Google writes, browser automation,
-outreach, hosting, Funnel activation or MCP writes. #10 owns incremental scans,
-health/freshness/closed postings; #11 owns eligibility. Issue #3 stays independent.
+Issue #3 remains an independent optional-interface track and stays open until
+actual authenticated ChatGPT invocation succeeds. No external endpoint, Funnel,
+service installation, paid dependency or new permission is authorized by this
+handoff. Keep `main` unchanged and follow the explicit review/merge authorization
+for the next task.

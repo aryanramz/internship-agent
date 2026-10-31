@@ -29,6 +29,8 @@ or installed service. Merging code does not authorize runtime activation.
 | Source/platform terms | Public feeds and authorized imports only | Operator is responsible for source-specific restrictions and rate limits |
 | Discovery interruption or false closure | Versioned additive SQLite state, fenced five-minute leases, atomic page/job/evidence/cursor commits; durable backoff and safe errors; missing listings never close jobs | Offset snapshots can reorder; only explicit passed Greenhouse deadlines confirm closure; no distributed scheduling or retention purge |
 | URL-based history loss | Existing posting IDs remain authoritative; shared canonical URLs produce review candidates without merging new records or application outcomes | Earlier destructive merges cannot be reconstructed without source evidence |
+| False eligibility or inferred sensitive facts | Bounded typed private facts with explicit verification/provenance and matching qualifiers; exact posting evidence; three-state comparisons separate from fit; unsupported mandatory wording is manual review | Declarations and source truth are not independently authenticated; controlled English extraction is incomplete. No legal/hiring determination; verify original posting locally |
+| Private eligibility facts exposed remotely | Full eligibility reports are local-only; opt-in local ranking adds minimal summary; MCP default contracts and its three read-only tools unchanged | Local report output contains relevant facts/references and must remain private; trusted operator/profile configuration remains required |
 
 ## Release checklist
 

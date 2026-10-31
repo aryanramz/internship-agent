@@ -3,8 +3,8 @@
 **An open-source, local-first, ChatGPT-oriented internship workflow platform.**
 
 Internship Agent combines Python employer job-board readers, explainable ranking,
-profile-based documents and a SQLite application ledger. The target workflow adds
-continuous discovery, structured internship eligibility, verified application
+profile-based documents, structured local eligibility and a SQLite application ledger. The target workflow adds
+continuous discovery, verified application
 materials, approved application assistance and recruiting outcome tracking.
 Those additions have explicit [development gates](docs/ROADMAP.md).
 
@@ -31,7 +31,7 @@ submission or recruiter emailing**. See the [capability matrix](docs/CAPABILITIE
 | Discovery | 18 source types; Greenhouse/Lever/Ashby live-qualified; compatible employer registry | One public board per named provider, not all sources/boards; feeds can change or rate-limit |
 | Discovery recovery | Durable page checkpoints, source health/backoff and separate posting evidence | Manual invocation; conservative coverage/closure policies; no unattended scheduler |
 | Fit scoring | Explainable weighted role, skill, location, freshness, compensation, employer scoring | Heuristic score, **not** an interview/hiring probability |
-| Screening | Flags senior/graduate/clearance language | Does not determine legal/work eligibility |
+| Eligibility | Versioned private facts, posting evidence and separate eligible/uncertain/ineligible local reports | Controlled English extraction; missing/unverified/ambiguous facts need manual review; no legal determinations |
 | Documents | Single-column DOCX resume and cover-letter draft from a verified profile | No guarantee of passing ATS; requires human review |
 | Tracking | SQLite status ledger with audit events and explicit approval step | Records confirmation evidence; doesn't independently verify submission |
 | Google | Gmail lead staging; exact Sheets previews, confirmed sync and local audit | Basic synthetic Sheets sync live-tested by operator; Gmail and broader scenarios remain unqualified |
@@ -66,6 +66,14 @@ verified board linking. See [registry configuration and compatibility](docs/EMPL
 `internship-agent availability` inspect local discovery evidence read-only.
 Discovery respects retry times and bounded page/source budgets; see
 [recovery, migrations and availability policy](docs/DISCOVERY_LIFECYCLE.md).
+
+`internship-agent eligibility <job_id> --profile config/profile.json` reads an
+existing posting and private profile without changing either. `rank
+--with-eligibility` adds a separate assessment while preserving fit scores and
+ordering. See [profile provenance, rules and fictional examples](docs/ELIGIBILITY.md).
+Existing simple profiles still work; structured definite comparisons require
+explicitly verified version 2 facts. Detailed report output is private. The
+three MCP tools and their minimal projections remain unchanged.
 
 The demo creates `demo-output/` containing a fictional three-job database, ranking summary and DOCX resume/letter. It does not authenticate, search real jobs, submit forms, or send email. **Never use the synthetic profile as your real resume.**
 
@@ -133,7 +141,8 @@ The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operat
 1. Multi-provider ATS validation and employer registry are implemented in Issue #9;
    Issue #10 adds durable incremental scans, health and conservative posting evidence
    ([scope and handoff](docs/NEXT_ENGINEERING_PR.md)).
-2. Verified profile/eligibility, explainable ranking and document QA.
+2. Structured profile/eligibility is implemented in Issue #11; explainable
+   ranking/preferences (#12) and document QA (#13) remain separate R2 work.
 3. Recoverable local preparation/tracking, then Windows scheduling and dashboard.
 4. Optional ChatGPT qualification in parallel; approved browser assistance next.
 5. Verified recruiter workflows and analytics; optional cloud assessment last.

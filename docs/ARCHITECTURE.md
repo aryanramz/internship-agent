@@ -23,6 +23,7 @@ endpoint is active. See [roadmap](ROADMAP.md) and [release gates](RELEASE_PLAN.m
 | Discovery lifecycle | `SourcePage` / `DiscoveryState`: versioned SQLite source/run/provenance/evidence tables, atomic page ingestion/checkpoint, fenced restart and durable retry eligibility |
 | Orchestration | `Agent` in `service.py`: discovery, ranked views, document preparation, tracking and separately authorized optional Google operations |
 | Fit and documents | `scoring.py`: deterministic component scores/keyword warnings; `documents.py`: profile-based DOCX emphasis/drafts, not a claim-verification engine |
+| Structured eligibility | `eligibility_profile.py`: bounded private versioned declarations; `eligibility_requirements.py`: evidence-anchored controlled parser; `eligibility.py`: pure three-state comparison, independent of fit |
 | Local interfaces | `cli.py` for the working pipeline; `tracker.py` for reviewed CSV export; `scripts/run-daily.ps1` is an existing routine runner, not a qualified scheduler |
 | Optional Google | Per-user grants; Gmail read-only lead staging/review; Sheets preview/confirmed mirror synchronization |
 | Optional MCP | Import-safe stdio, strict JWT/HTTP adapter and prepared `mcp_gateway*.py` route boundary; exactly three read-only tools, loopback only, no activation |
@@ -58,8 +59,11 @@ board configuration; Issue #9 extends it compatibly with an employer registry
 without duplicating the application ledger or changing job IDs. Reads do not
 migrate files; explicit registration is idempotent and atomic. Different boards
 are linked only with an explicitly verified employer ID, not a shared name.
-Profile/documents/credentials remain
-private files; structured verified-fact provenance is planned in #11.
+Profile/documents/credentials remain private files. Issue #11 adds
+[structured verified-fact provenance](ELIGIBILITY.md) in private JSON without a
+SQLite migration or profile rewrite. Full eligibility reports remain local;
+ranking has an explicit additive summary option, and default MCP projections
+do not acquire candidate facts or provenance references.
 
 Posting IDs derive from provider, board token and posting ID. Issue #10 retains
 distinct IDs even when canonical URLs match, with review-only candidate links
@@ -70,8 +74,11 @@ closed posting or a rejected application.
 
 Job descriptions, alerts, URLs and messages are untrusted data. A saved lead is
 not proof of a current opening. Current profile verification depends on user input;
-existing document code does not establish every claim's truth. #11/#13 add explicit
-provenance and QA. A fit score is neither eligibility nor a hiring probability.
+existing document code does not establish every claim's truth. #11 records explicit
+declaration provenance for deterministic eligibility; #13 still owns document QA.
+A fit score is neither eligibility nor a hiring probability. The new evaluator
+requires applicable, explicitly verified facts and retains unsupported mandatory
+posting language as uncertainty. It does not infer legal status or execute text.
 
 ## Application state and approval
 
@@ -127,8 +134,9 @@ failure recovery and repeat actions before any browser assistant depends on it.
 1. Issues #9/#10 provide three-provider qualification, compatible employer registry
    and [durable source health/recovery/posting evidence](DISCOVERY_LIFECYCLE.md).
    Unattended scheduling remains #15; no release is published by these changes.
-2. Add structured candidate facts/eligibility, explainable preferences/taxonomy and
-   claim-traced document variants (#11–#13). Keep deterministic operation available.
+2. Structured candidate facts/eligibility are implemented in #11. Explainable
+   preferences/taxonomy (#12) and claim-traced document variants (#13) remain
+   separate work. Keep deterministic operation available; R2 is not complete.
 3. Qualify a recoverable preparation/tracking service contract (#14), then share
    it through the CLI and a small loopback dashboard (#16), without a second ledger.
 4. Add owned Windows scheduling with retry/catch-up/notifications (#15), independent

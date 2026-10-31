@@ -22,6 +22,9 @@ def main():
         if name=="availability":
             report.add_argument("--job-id",default=None)
     a=cmds.add_parser("rank");a.add_argument("--profile",default="config/profile.json");a.add_argument("--min-score",type=int,default=0);a.add_argument("--limit",type=int,default=25)
+    a.add_argument("--with-eligibility",action="store_true",help="Add a separate local eligibility summary; preserve score and order")
+    a=cmds.add_parser("eligibility",help="Read-only local evidence-backed assessment; candidate details are not exposed by MCP")
+    a.add_argument("job_id");a.add_argument("--profile",default="config/profile.json")
     a=cmds.add_parser("preview");a.add_argument("job_id");a.add_argument("--profile",default="config/profile.json")
     a=cmds.add_parser("prepare");a.add_argument("job_id");a.add_argument("--profile",default="config/profile.json")
     a=cmds.add_parser("approve");a.add_argument("job_id");a.add_argument("confirmation_phrase")
@@ -78,6 +81,14 @@ def main():
             print(json.dumps(result,indent=2,ensure_ascii=False))
         except (ValueError,OSError):
             p.exit(2,"Error: source registration or configuration is invalid; check the local registry and public board URL.\n")
+        return
+    if args.command=="eligibility" or (args.command=="rank" and args.with_eligibility):
+        try:
+            reader=Agent(args.data,read_only=True)
+            result=reader.eligibility(args.job_id,args.profile) if args.command=="eligibility" else reader.ranked(args.profile,args.limit,args.min_score,include_eligibility=True)
+            print(json.dumps(result,indent=2,ensure_ascii=False))
+        except (ValueError,OSError,sqlite3.Error):
+            p.exit(2,"Error: eligibility assessment requires an existing job/database, supported local profile and valid posting evidence.\n")
         return
     if args.command in {"source-health", "scans", "availability"}:
         from .discovery_state import DiscoveryState
