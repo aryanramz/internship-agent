@@ -15,7 +15,8 @@ QA. New versions describe coherent accepted outcomes, not those old phase labels
 
 Before the next release, align package/runtime/server version reporting and the
 changelog in a focused release-preparation change, preferably using one version
-source. This unrelated runtime change is excluded from the next ATS/registry PR.
+source. This runtime change belongs in release preparation, separate from
+onboarding documentation and feature PRs.
 Backward-incompatible local schemas/interfaces require an explicit pre-1.0 minor
 change plus migration/rollback notes; compatible fixes use patches.
 

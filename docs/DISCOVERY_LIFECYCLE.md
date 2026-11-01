@@ -147,7 +147,8 @@ connections unless an explicitly opted-in live test runs. Regression coverage
 includes migrations/rollback, page/restart/fencing, Retry-After, false-closure
 prevention, reopening and prepared/approved/submitted history.
 
-Initial qualification on 2026-10-29 (Windows, Python 3.12): **580 passed, 5 skipped,
+Initial qualification at implementation commit `4120fb6` on 2026-10-29
+(Windows, Python 3.12): **580 passed, 5 skipped,
 22 subtests passed in 105.10 seconds**. Skips are the three opt-in ATS checks,
 the opt-in Sheets write check and a POSIX-only permissions check. A real synthetic
 subprocess terminated during a page transaction; restart recovered zero partial
@@ -158,8 +159,10 @@ post-merge Python 3.11–3.13 CI evidence are recorded on the associated PR/Issu
 Independent review then found and reproduced concurrent initial-upgrade and
 legacy uniqueness defects. The follow-up version-2 migration has explicit
 concurrent-upgrade, submitted-history, intermediate-version, custom-index/trigger,
-failure-after-drop and nested-rollback regressions. Final counts are recorded on
-the PR/issue after rerunning the full suite.
+failure-after-drop and nested-rollback regressions. Final head `6201508` recorded **592 passed, 5 skipped, 22 subtests passed**
+on Windows/Python 3.12; see [PR #23](https://github.com/aryanramz/internship-agent/pull/23).
+These are separate executions; later eligibility/onboarding results are attributed
+in [the capability evidence](CAPABILITIES.md#baseline-checks-and-limits).
 
 [PR #22's live qualification](LIVE_ATS_VALIDATION.md) remains dated evidence for
 one Greenhouse, Lever and Ashby board each; Issue #10 does not repeat those live

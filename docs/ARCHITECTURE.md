@@ -8,10 +8,11 @@ usable without ChatGPT, MCP, Google or a model API. The CLI is implemented; the
 lightweight local dashboard is planned. Deterministic processing handles routine
 collection/filtering/scoring; optional AI helps with language and judgment.
 
-The [capability matrix](CAPABILITIES.md) records the roadmap baseline and subsequent
-[PR #8 gateway integration](https://github.com/aryanramz/internship-agent/pull/8).
-Gateway/startup code is included in this revision; no external MCP
-endpoint is active. See [roadmap](ROADMAP.md) and [release gates](RELEASE_PLAN.md).
+The [capability matrix](CAPABILITIES.md) records implementation through
+[PR #24](https://github.com/aryanramz/internship-agent/pull/24) at
+`e2b6e9742d48fb30500255714227d3ec1579b822`, including PR #23 discovery lifecycle
+and the earlier PR #8 gateway. Gateway/startup code is included; no external MCP
+endpoint activation is established by that code. See [roadmap](ROADMAP.md) and [release gates](RELEASE_PLAN.md).
 
 ## Current components
 
