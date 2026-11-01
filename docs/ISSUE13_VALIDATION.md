@@ -74,7 +74,26 @@ and `sys.flags.utf8_mode == 0` passed:
 The five skips were three opt-in live ATS requests, one opt-in live Sheets write,
 and one POSIX-only permissions test. Live integration flags were disabled.
 Local transport tests used supported execution permission; the offline network
-guard was unchanged. No additional source portability correction was needed.
+guard was unchanged. This initial local run did not reproduce the hosted
+PowerShell transport issue described below.
+
+The first hosted Windows run, [41347270787](https://github.com/aryanramz/internship-agent/actions/runs/41347270787),
+confirmed CP1252 and UTF-8 mode 0 on Python 3.12.10. All 36 document tests passed
+in 6.74s, but the full suite exposed an inherited lifecycle-preview failure:
+**1,019 passed, 1 failed, 5 skipped, 22 subtests passed in 87.90s**. A separate
+synthetic-only transport probe showed Windows PowerShell prepending `EF BB BF`
+to UTF-8 JSON, which the renderer's text JSON reader rejected. No private
+configuration or Task Scheduler operation was used for diagnosis.
+
+The renderer now decodes its input explicitly as `utf-8-sig`, accepting UTF-8
+with or without a byte-order mark. Two real subprocess regressions preserve
+Unicode settings across both forms; the BOM case was observed failing before
+the correction. The temporary hosted probe was removed. Combined local document
+and lifecycle tests passed **74 tests in 10.81s** after the correction. The full
+native Windows suite then passed **1,022 tests, 5 skips, 22 subtests in 88.50s**
+with `PYTHONUTF8=0` and all declared extras. Compilation (including the renderer),
+hygiene and dependency consistency passed again. Independent review of the
+workflow/decoder/test delta reported no actionable findings.
 
 The added `windows-tests` job uses `windows-latest` and Python 3.12, explicitly
 sets `PYTHONUTF8=0`, reports both locale encodings and asserts native Windows

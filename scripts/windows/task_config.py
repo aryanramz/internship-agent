@@ -184,7 +184,8 @@ def main() -> int:
             path = Path(local_path(sys.argv[2]))
             validate_provider_config(path.read_text(encoding="utf-8-sig"), dict(os.environ))
             return 0
-        request = json.load(sys.stdin)
+        # Windows PowerShell may prepend a BOM when piping UTF-8 JSON.
+        request = json.loads(sys.stdin.buffer.read().decode("utf-8-sig"))
         if sys.argv[1:] == ["render"]:
             print(json.dumps(render_tasks(**request)))
         elif sys.argv[1:] == ["order"]:
