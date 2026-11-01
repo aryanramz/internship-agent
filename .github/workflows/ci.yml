@@ -80,7 +80,7 @@ jobs:
           [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
           $request = '{"workspace":"C:\\Synthetic \u03a9 Workspace\\agent","config_path":"C:\\Private\\gateway.json","keycloak_home":"C:\\Providers\\keycloak","user_sid":"S-1-5-21-1000","windows_dir":"C:\\Windows"}' | ConvertFrom-Json
           $json = $request | ConvertTo-Json -Depth 12 -Compress
-          $json | python -X utf8 -c 'import os,sys; print("UTF8 mode:",sys.flags.utf8_mode); print("stdio:",sys.stdin.encoding,sys.stdout.encoding); print("PYTHONIOENCODING:",os.environ.get("PYTHONIOENCODING")); print("input bytes:",sys.stdin.buffer.read().hex())'
+          $json | python -X utf8 -c 'import sys; print(sys.flags.utf8_mode); print(sys.stdin.encoding,sys.stdout.encoding); print(sys.stdin.buffer.read().hex())'
           $json | python -X utf8 scripts/windows/task_config.py render
           exit $LASTEXITCODE
           '@ | Set-Content -LiteralPath "$env:RUNNER_TEMP/renderer-probe.ps1" -Encoding utf8
