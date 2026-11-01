@@ -56,6 +56,38 @@ PowerShell. The PR remains open and unmerged at
 [PR #27](https://github.com/aryanramz/internship-agent/pull/27). Subsequent changes
 recording this evidence modify documentation only; the PR checks report their CI.
 
+## Native Windows regression qualification
+
+PR #27's UTF-8 JSON-read correction is commit
+`d431033283cf513e67dccbed2f44f6d095786a37`, based on develop
+`1f31f5769101a6906dcd82d604c043cd2e2bfa3a`. Native local verification on
+Windows with Python **3.12.6**, `PYTHONUTF8=0`, `locale.getencoding(): cp1252`
+and `sys.flags.utf8_mode == 0` passed:
+
+- `python -m pytest tests/test_document_variants.py -q -ra`: **36 passed in
+  9.02s**, including `test_exact_claim_trace_and_conservative_answers`.
+- `python -m pytest -q -ra`: **1,020 passed, 5 skipped, 22 subtests passed in
+  99.92s**, with all declared `.[test,google,mcp,security]` extras installed.
+- Compile, repository hygiene (**127 tracked files, zero problems**), dependency
+  consistency, a fresh synthetic demo and diff whitespace checks passed.
+
+The five skips were three opt-in live ATS requests, one opt-in live Sheets write,
+and one POSIX-only permissions test. Live integration flags were disabled.
+Local transport tests used supported execution permission; the offline network
+guard was unchanged. No additional source portability correction was needed.
+
+The added `windows-tests` job uses `windows-latest` and Python 3.12, explicitly
+sets `PYTHONUTF8=0`, reports both locale encodings and asserts native Windows
+with UTF-8 mode disabled. It installs every declared optional extra, separately
+runs all document regressions and the full offline suite, then checks compilation,
+hygiene and the synthetic demo. Existing Linux matrix and security jobs are
+unchanged. Exact hosted run/head results are recorded in the PR's validation
+summary after completion. `actionlint` was unavailable locally; GitHub Actions
+execution remains the workflow qualification.
+
+This qualifies Python document generation/tests, not Microsoft Word rendering.
+The rendering limits below and Issue #14's separate recovery scope still apply.
+
 ## Rendered document QA
 
 Renderer: **LibreOfficeDev 26.8.0.0.alpha0**, build
