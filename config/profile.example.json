@@ -69,5 +69,211 @@
     "version": 1,
     "weights": {},
     "preferences": {}
+  },
+  "documents": {
+    "version": 1,
+    "facts": [
+      {
+        "id": "demo-fact-0",
+        "path": "/name",
+        "value": "Demo Student",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-1",
+        "path": "/email",
+        "value": "demo@example.org",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-2",
+        "path": "/location",
+        "value": "Metro City, US",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-3",
+        "path": "/education/school",
+        "value": "Example State University",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-4",
+        "path": "/education/degree",
+        "value": "B.S. in Information Systems",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-5",
+        "path": "/education/graduation",
+        "value": "May 2028",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-6",
+        "path": "/skills/0",
+        "value": "Python",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-7",
+        "path": "/skills/1",
+        "value": "AWS",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-8",
+        "path": "/skills/2",
+        "value": "Terraform",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-9",
+        "path": "/skills/3",
+        "value": "Linux",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-10",
+        "path": "/skills/4",
+        "value": "Networking",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-11",
+        "path": "/skills/5",
+        "value": "GitHub Actions",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-12",
+        "path": "/skills/6",
+        "value": "SQL",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-13",
+        "path": "/experience/0/title",
+        "value": "IT Engineering Intern",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-14",
+        "path": "/experience/0/company",
+        "value": "Sample Technology Co.",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-15",
+        "path": "/experience/0/dates",
+        "value": "Summer 2026",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-16",
+        "path": "/experience/0/bullets/0",
+        "value": "Automated a recurring infrastructure configuration check using Python.",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-17",
+        "path": "/experience/0/bullets/1",
+        "value": "Documented operational runbooks for a small Linux environment.",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-18",
+        "path": "/projects/0/name",
+        "value": "Infrastructure Lab",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-19",
+        "path": "/projects/0/stack/0",
+        "value": "AWS",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-20",
+        "path": "/projects/0/stack/1",
+        "value": "Terraform",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-21",
+        "path": "/projects/0/stack/2",
+        "value": "GitHub Actions",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-22",
+        "path": "/projects/0/bullets/0",
+        "value": "Provisioned a small demonstration environment with infrastructure as code.",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      },
+      {
+        "id": "demo-fact-23",
+        "path": "/projects/0/bullets/1",
+        "value": "Added version-controlled deployment checks and setup instructions.",
+        "verified": true,
+        "source": "SYNTHETIC fixture review only; not real candidate evidence",
+        "reviewed_on": "2026-11-01"
+      }
+    ],
+    "tracks": {
+      "cloud": [
+        "/skills/1",
+        "/skills/2"
+      ],
+      "systems": [
+        "/skills/3"
+      ]
+    }
   }
 }

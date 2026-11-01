@@ -33,6 +33,17 @@ or installed service. Merging code does not authorize runtime activation.
 | False eligibility or inferred sensitive facts | Bounded typed private facts with explicit verification/provenance and matching qualifiers; exact posting evidence; three-state comparisons separate from fit; unsupported mandatory wording is manual review | Declarations and source truth are not independently authenticated; controlled English extraction is incomplete. No legal/hiring determination; verify original posting locally |
 | Private eligibility facts exposed remotely | Full eligibility reports are local-only; opt-in local ranking adds minimal summary; MCP default contracts and its three read-only tools unchanged | Local report output contains relevant facts/references and must remain private; trusted operator/profile configuration remains required |
 
+## Document draft boundary (Issue #13, pending PR)
+
+Document claims require exact path/value-bound local attestations. Conflicting,
+unverified and stale declarations are withheld; no work authorization answer is
+inferred. Local traces contain private values/provenance and remain outside MCP
+projections. New exclusive revision directories preserve prior files. Structural
+QA and hashes detect accidental edits before approval, not malicious writes by
+the trusted OS account. Source pointers and review labels never open files or URLs.
+There is no file/DB transaction or restart reconciliation; those remain #14.
+Rendering and source truth still need human review.
+
 ## Release checklist
 
 - [ ] No `config/profile.json`, `config/sources.json`, `data/`, `.env`, personal files or generated documents staged

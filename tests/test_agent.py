@@ -75,7 +75,8 @@ class WorkflowTests(unittest.TestCase):
     def test_documents_and_approval_state_machine(self):
         rp,lp=create_documents(self.j.to_dict(),PROFILE,self.tmp.name)
         words=' '.join(p.text for p in Document(rp).paragraphs)
-        self.assertIn("Terraform",words)
+        self.assertNotIn("Terraform",words)
+        self.assertIn("REVIEW REQUIRED",words)
         self.assertNotIn("Kubernetes",words)
         self.assertIn("DRAFT",lp)
         self.store.set_prepared(self.j.id,rp,lp)

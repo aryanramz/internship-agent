@@ -31,7 +31,9 @@ def run_demo(output: Path) -> dict:
         "rankings": [{"title": j["title"], "fit_score": j["score"],
                       "eligibility": j["eligibility"], "flags": j["flags"]} for j in ranked],
         "tailoring": preview["tailoring"],
-        "generated_files": {"resume": packet["resume_path"], "cover_letter_draft": packet["letter_path"]},
+        "generated_files": {"resume": packet["resume_path"], "cover_letter_draft": packet["letter_path"],
+                            "application_answers_draft": packet["answers_path"],
+                            "claim_trace": packet["trace_path"], "document_qa": packet["qa_path"]},
         "application_status": packet["status"],
         "next_step": "Review documents; nothing was submitted."
     }

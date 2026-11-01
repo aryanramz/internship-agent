@@ -34,6 +34,9 @@ def fictional_agent(tmp_path):
     profile.write_text(json.dumps({"name":"Synthetic Candidate","email":"private@example.com",
         "target_roles":["cloud infrastructure"],"skills":["Python","AWS","UnrelatedPrivateSkill"],
         "preferred_locations":["Example City"],"private_marker":"NEVER_RETURN_FULL_PROFILE",
+        "documents":{"version":1,"facts":[{"id":"PRIVATE_DOCUMENT_FACT", "path":"/skills/0",
+            "value":"Python", "verified":True, "source":"PRIVATE_DOCUMENT_PROVENANCE",
+            "reviewed_on":"2026-11-01"}]},
         "profile_version":2,"candidate_facts":[{"id":"private-authorization","field":"work_authorized",
             "value":False,"status":"known","qualifiers":{"country":"US"},
             "provenance":{"kind":"user_declared","verified":True,"reference":"PRIVATE_ELIGIBILITY_PROVENANCE"}}]}),encoding="utf-8")
@@ -104,7 +107,8 @@ def test_real_stdio_initialization_discovery_and_readonly_calls(fictional_agent,
             output=json.dumps(preview.structured_content)+json.dumps(ranked.structured_content)
             for private in ("PRIVATE-DOCUMENT","PRIVATE-PROFILE","private@example.com",
                             "NEVER_RETURN_FULL_PROFILE","UnrelatedPrivateSkill","PRIVATE_ELIGIBILITY_PROVENANCE",
-                            "private-authorization","candidate_facts","eligibility_assessment"):
+                            "private-authorization","candidate_facts","eligibility_assessment",
+                            "PRIVATE_DOCUMENT_FACT","PRIVATE_DOCUMENT_PROVENANCE","claims.json","qa.json"):
                 assert private not in output
             for name in ("approve_application","record_confirmed_submission","prepare_application",
                          "apply_google_sheet_sync","import_external_jobs","discover_jobs","ingest_google_job_alerts"):
