@@ -30,7 +30,7 @@ submission or recruiter emailing**. See the [capability matrix](docs/CAPABILITIE
 |---|---|---|
 | Discovery | 18 source types; Greenhouse/Lever/Ashby live-qualified; compatible employer registry | One public board per named provider, not all sources/boards; feeds can change or rate-limit |
 | Discovery recovery | Durable page checkpoints, source health/backoff and separate posting evidence | Manual invocation; conservative coverage/closure policies; no unattended scheduler |
-| Fit scoring | Explainable weighted role, skill, location, freshness, compensation, employer scoring | Heuristic score, **not** an interview/hiring probability |
+| Fit scoring | Six components with bounded weights/preferences, title taxonomy, evidence/missingness and stable ordering; [ranking guide](docs/RANKING.md) | Heuristic fit; local explanations, conservative taxonomy, no calibrated accuracy |
 | Eligibility | Versioned private facts, posting evidence and separate eligible/uncertain/ineligible local reports | Controlled English extraction; missing/unverified/ambiguous facts need manual review; no legal determinations |
 | Documents | Single-column DOCX resume and cover-letter draft from a verified profile | No guarantee of passing ATS; requires human review |
 | Tracking | SQLite status ledger with audit events and explicit approval step | Records confirmation evidence; doesn't independently verify submission |
@@ -73,7 +73,9 @@ existing posting and private profile without changing either. `rank
 ordering. See [profile provenance, rules and fictional examples](docs/ELIGIBILITY.md).
 Existing simple profiles still work; structured definite comparisons require
 explicitly verified version 2 facts. Detailed report output is private. The
-three MCP tools and their minimal projections remain unchanged.
+three MCP tools and their minimal projections remain unchanged. Ranking preferences
+and detailed local explanations are documented in [the ranking guide](docs/RANKING.md);
+fit never overrides an uncertain/ineligible assessment.
 
 The demo creates `demo-output/` containing a fictional three-job database, ranking summary and DOCX resume/letter. It does not authenticate, search real jobs, submit forms, or send email. **Never use the synthetic profile as your real resume.**
 
@@ -148,7 +150,8 @@ The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operat
    Issue #10, merged in PR #23, implements durable incremental scans, health and conservative posting evidence
    ([scope and handoff](docs/NEXT_ENGINEERING_PR.md)).
 2. Structured profile/eligibility is implemented through PR #24 (Issue #11); explainable
-   ranking/preferences (#12) and document QA (#13) remain separate R2 work.
+   ranking/preferences (#12) are implemented in this feature branch pending review;
+   document QA (#13) remains separate R2 work and has not started here.
 3. Recoverable local preparation/tracking, then Windows scheduling and dashboard.
 4. Optional ChatGPT qualification in parallel; approved browser assistance next.
 5. Verified recruiter workflows and analytics; optional cloud assessment last.

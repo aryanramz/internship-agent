@@ -1,4 +1,4 @@
-# Next engineering handoff — explainable ranking
+# Engineering handoff — ranking acceptance, then document QA
 
 [Issue #9](https://github.com/aryanramz/internship-agent/issues/9) implements
 three-provider ATS qualification and the compatible employer registry;
@@ -12,19 +12,21 @@ R1 engineering acceptance is separate from formal release preparation/publicatio
 [Issue #11](https://github.com/aryanramz/internship-agent/issues/11) at
 `e2b6e9742d48fb30500255714227d3ec1579b822`:
 [private versioned facts and evidence-backed structured eligibility](ELIGIBILITY.md).
-The next feature scope is
-[Issue #12](https://github.com/aryanramz/internship-agent/issues/12), explainable
-ranking, taxonomy and user preferences. It has **not** been started by the
-eligibility implementation. Read the current issue and its dependencies before
-opening a separate branch from the latest accepted `develop`.
+This feature branch implements [Issue #12](https://github.com/aryanramz/internship-agent/issues/12):
+[deterministic ranking, taxonomy, preferences and local explanations](RANKING.md).
+It remains subject to review/acceptance. After acceptance, the next separate feature
+is [Issue #13](https://github.com/aryanramz/internship-agent/issues/13), verified
+document variants and claim QA. Issue #13 is not implemented here. Read its issue
+and dependencies before opening a new branch from latest accepted `develop`.
 
 ## Boundary to preserve
 
 - SQLite remains the authoritative application ledger. Preserve posting IDs,
   schema version, discovery checkpoints, availability evidence, application
   states and events; source availability is not an application outcome.
-- Existing `scoring.py` weights, score components, sorting and default `rank`
-  output remain the compatibility baseline. Issue #11 changes none of these.
+- Keep the six default fit weights, configurable component isolation and
+  [documented ranking compatibility](RANKING.md). Issue #12 adds local explanations,
+  role corrections and stable job-ID tie-breaking; MCP uses explicit legacy projections.
 - Structured `eligible`/`uncertain`/`ineligible` is separate from fit. A high fit
   score cannot override a failed mandatory eligibility rule. Missing or
   unverified candidate information must not become a definite negative.

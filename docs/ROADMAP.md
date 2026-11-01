@@ -58,8 +58,8 @@ approvals or evidence. No additional paid service is required or authorized.
    [Codex development process](CODEX_DEVELOPMENT.md).
 2. Preserve completed discovery/registry and lifecycle work (#9/#10, PRs #22/#23).
 3. Preserve completed structured eligibility (#11, PR #24).
-4. Next feature: explainable ranking/preferences (#12), followed by verified
-   documents (#13); this onboarding change implements neither.
+4. Review/accept explainable ranking/preferences (#12, this feature branch);
+   verified documents (#13) remain the next separate feature, not started here.
 5. Qualify one recoverable local preparation/tracking workflow.
 6. Add Windows unattended scheduling and a lightweight local dashboard.
 7. Qualify ChatGPT connectivity independently; it must not block local progress.
@@ -79,7 +79,7 @@ gates rather than invented deadlines or completion percentages.
 | A — Discovery | Implemented: Greenhouse/Lever/Ashby qualification and compatible employer registry | [#9](https://github.com/aryanramz/internship-agent/issues/9), R1 Part 1; see [evidence](LIVE_ATS_VALIDATION.md) |
 | A — Discovery | Implemented in #10: bounded page checkpoints, fenced recovery, health/backoff, conservative availability and review-only canonical matches | [#10](https://github.com/aryanramz/internship-agent/issues/10), R1; [evidence/policy](DISCOVERY_LIFECYCLE.md) |
 | B — Profile/eligibility | Implemented in #11: private versioned declarations; graduation/enrollment/term/location and qualified authorization comparisons; eligible/uncertain/ineligible with evidence | [#11](https://github.com/aryanramz/internship-agent/issues/11), R2; [scope/limits](ELIGIBILITY.md) |
-| C — Matching | Internship taxonomy, skills/experience, configurable weights/preferences, explanations and optional calibration | [#12](https://github.com/aryanramz/internship-agent/issues/12), R2 |
+| C — Matching | Issue #12 feature branch: deterministic taxonomy, skills/experience, bounded weights/preferences and local explanations; pending acceptance, no AI/calibration | [#12](https://github.com/aryanramz/internship-agent/issues/12), R2 |
 | D — Documents | Master profile, career-track/job variants, letters/answer drafts, claim trace and QA | [#13](https://github.com/aryanramz/internship-agent/issues/13), R2 |
 | E — Workflow | Recoverable preparation/review/tracking, document-bound approval and duplicate-action/evidence handling | [#14](https://github.com/aryanramz/internship-agent/issues/14), R3 |
 | G — Scheduling | Windows controls, retries, catch-up, overlap protection and private notifications | [#15](https://github.com/aryanramz/internship-agent/issues/15), R4 |
@@ -134,7 +134,8 @@ publish releases or bump runtime metadata. Detailed acceptance, version drift
 and publication procedure are in [RELEASE_PLAN.md](RELEASE_PLAN.md).
 R1 discovery engineering is implemented through #9/#10; formal release
 preparation/publication is separate. #11 completes only the eligibility slice of
-R2: #12 ranking/preferences and #13 document QA remain pending. Neither R2 nor
+R2: #12 ranking/preferences await acceptance of this branch; #13 document QA
+remains pending. Neither R2 nor
 authenticated ChatGPT qualification is completed by these changes.
 
 ## Measurement and review

@@ -5,7 +5,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from .sources import retrieve_page, normalize, SUPPORTED, AGGREGATORS, SourceError
-from .scoring import evaluate
+from .scoring import evaluate, _evaluate
 from .documents import create_documents,tailoring_report
 from .store import Store
 from .models import validate_board
@@ -168,6 +168,27 @@ class Agent:
             result[self.store.upsert_job(job)]+=1
         return result
 
+    def _ranking_profile(self, profile_path):
+        """Read bounded private ranking input without duplicate-key overrides."""
+        def unique(pairs):
+            out={}
+            for key,value in pairs:
+                if key in out:
+                    raise ValueError()
+                out[key]=value
+            return out
+        try:
+            with open(profile_path,'rb') as stream:
+                raw=stream.read(1_048_577)
+            if len(raw)>1_048_576:
+                raise ValueError()
+            profile=json.loads(raw,object_pairs_hook=unique)
+            if not isinstance(profile,dict):
+                raise ValueError()
+            return profile
+        except (ValueError,UnicodeError,RecursionError,OSError):
+            raise ValueError('Invalid ranking configuration') from None
+
     def _eligibility_profile(self, profile_path):
         """Bounded private input; duplicate fields cannot silently change a fact."""
         from .eligibility_profile import MAX_PROFILE_BYTES, normalize_profile
@@ -200,38 +221,46 @@ class Agent:
         from .eligibility import evaluate_eligibility
         job = self.store.get_job(jid)
         profile = self._eligibility_profile(profile_path)
-        assessment = evaluate_eligibility(profile,job,as_of=self.clock().date())
-        fit = evaluate(job,profile)
+        now=self.clock()
+        assessment = evaluate_eligibility(profile,job,as_of=now.date())
+        fit = evaluate(job,profile,as_of=now)
         return {"job_id":jid,"company":job["company"],"title":job["title"],
                 "fit_score":fit["score"],"fit_components":fit["components"],**assessment}
 
     def ranked(self, profile_path: str, limit: int=25, min_score: int=0, *, include_eligibility=False) -> list[dict]:
         if type(include_eligibility) is not bool:
             raise ValueError("Eligibility projection must be boolean")
-        profile=self._eligibility_profile(profile_path) if include_eligibility else self.load_profile(profile_path)
+        profile=self._eligibility_profile(profile_path) if include_eligibility else self._ranking_profile(profile_path)
+        from .ranking_config import configuration
+        config=configuration(profile)  # Validate/precompute once for the whole invocation.
+        now=self.clock()
         result=[]
         jobs = self.store.list_jobs(10000)
         for job in jobs:
-            report=evaluate(job,profile)
+            report=_evaluate(job,config,now,explain=False)
             if report["score"]>=min_score:
                 result.append({"job_id":job["id"],"company":job["company"],"title":job["title"],"location":job["location"],
                                "job_url":job["job_url"],"apply_url":job["apply_url"],"status":job["status"],**report})
-        result.sort(key=lambda x:(x["eligibility"]!="review", -x["score"],x["company"]))
+        result.sort(key=lambda x:(x["eligibility"]!="review", -x["score"],x["company"].casefold(),x["job_id"]))
         selected = result[:max(1,min(limit,100))]
+        by_id={job['id']:job for job in jobs}
+        for row in selected:
+            row['ranking_explanation']=_evaluate(by_id[row['job_id']],config,now)['ranking_explanation']
         if include_eligibility:
             from .eligibility import evaluate_requirements
             from .eligibility_profile import normalize_profile
             from .eligibility_requirements import parse_requirements
             candidate = normalize_profile(profile)
-            by_id = {job["id"]:job for job in jobs}
             for row in selected:
-                assessment = evaluate_requirements(candidate,parse_requirements(by_id[row["job_id"]]),as_of=self.clock().date())
+                assessment = evaluate_requirements(candidate,parse_requirements(by_id[row["job_id"]]),as_of=now.date())
                 row["eligibility_assessment"] = {key:assessment[key] for key in ("outcome","required_rule_count","missing_information")}
+                row["eligibility_assessment"]["action"] = {"ineligible":"do_not_apply", "uncertain":"manual_review", "eligible":"review_posting"}[assessment["outcome"]]
         return selected
 
     def preview(self, jid: str, profile_path: str) -> dict:
         job=self.store.get_job(jid)
-        return {"ranking":evaluate(job,self.load_profile(profile_path)),"tailoring":tailoring_report(job,self.load_profile(profile_path)),
+        profile=self._ranking_profile(profile_path)
+        return {"ranking":evaluate(job,profile,as_of=self.clock()),"tailoring":tailoring_report(job,profile),
                 "job_url":job["job_url"],"apply_url":job["apply_url"]}
 
     def prepare(self, jid: str, profile_path: str) -> dict:

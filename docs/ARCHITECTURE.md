@@ -23,7 +23,7 @@ endpoint activation is established by that code. See [roadmap](ROADMAP.md) and [
 | Ledger | `Store` in `store.py`: jobs, applications, events and staged email leads in SQLite |
 | Discovery lifecycle | `SourcePage` / `DiscoveryState`: versioned SQLite source/run/provenance/evidence tables, atomic page ingestion/checkpoint, fenced restart and durable retry eligibility |
 | Orchestration | `Agent` in `service.py`: discovery, ranked views, document preparation, tracking and separately authorized optional Google operations |
-| Fit and documents | `scoring.py`: deterministic component scores/keyword warnings; `documents.py`: profile-based DOCX emphasis/drafts, not a claim-verification engine |
+| Fit and documents | `scoring.py` with `ranking_config.py`/`role_taxonomy.py`: deterministic component scores, bounded preferences and local explanation; `documents.py`: profile-based DOCX emphasis/drafts, not a claim-verification engine |
 | Structured eligibility | `eligibility_profile.py`: bounded private versioned declarations; `eligibility_requirements.py`: evidence-anchored controlled parser; `eligibility.py`: pure three-state comparison, independent of fit |
 | Local interfaces | `cli.py` for the working pipeline; `tracker.py` for reviewed CSV export; `scripts/run-daily.ps1` is an existing routine runner, not a qualified scheduler |
 | Optional Google | Per-user grants; Gmail read-only lead staging/review; Sheets preview/confirmed mirror synchronization |
@@ -136,8 +136,8 @@ failure recovery and repeat actions before any browser assistant depends on it.
    and [durable source health/recovery/posting evidence](DISCOVERY_LIFECYCLE.md).
    Unattended scheduling remains #15; no release is published by these changes.
 2. Structured candidate facts/eligibility are implemented in #11. Explainable
-   preferences/taxonomy (#12) and claim-traced document variants (#13) remain
-   separate work. Keep deterministic operation available; R2 is not complete.
+   preferences/taxonomy (#12) are implemented in this feature branch pending review;
+   claim-traced document variants (#13) remain separate work. Keep deterministic operation available; R2 is not complete.
 3. Qualify a recoverable preparation/tracking service contract (#14), then share
    it through the CLI and a small loopback dashboard (#16), without a second ledger.
 4. Add owned Windows scheduling with retry/catch-up/notifications (#15), independent
