@@ -124,6 +124,10 @@ flowchart TD
 
 ## Reproducibility and development
 
+Development is Codex-first; the local product remains independent of Codex and
+ChatGPT. Follow [Codex Cloud setup and PR delivery](docs/CODEX_DEVELOPMENT.md)
+for Python 3.11–3.13, full test extras, platform skips and approved network permissions.
+
 ```powershell
 python -m pytest -q
 python scripts/check_repo_hygiene.py
@@ -132,16 +136,18 @@ python -m compileall -q src
 
 [Architecture](docs/ARCHITECTURE.md) · [Capability matrix](docs/CAPABILITIES.md) · [Threat model](docs/THREAT_MODEL.md) · [Source coverage](docs/SOURCE_MATRIX.md) · [Master roadmap](docs/ROADMAP.md) · [Release gates](docs/RELEASE_PLAN.md) · [Demo](docs/DEMO.md) · [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md)
 
-GitHub Actions runs tests across supported Python versions and checks for common accidental private-file commits. The file-checker is not a substitute for full secret scanning or security review.
+GitHub Actions runs the existing Python 3.11–3.13 matrix and dependency audit on
+pull requests, pushes to `main`/`develop`, and manual dispatch. It checks for common
+accidental private-file commits. The file-checker is not a substitute for full secret scanning or security review.
 
 The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operator-reported successful basic live sync and the focused local checks. Google credentials use a [shared per-user store](docs/GOOGLE_SETUP.md#credential-storage-and-compatibility), independent of `--data`. Install `.[test,google,mcp]` for the full offline SDK regression suite; CI does so on every supported Python version.
 
 ## Roadmap
 
 1. Multi-provider ATS validation and employer registry are implemented in Issue #9;
-   Issue #10 adds durable incremental scans, health and conservative posting evidence
+   Issue #10, merged in PR #23, implements durable incremental scans, health and conservative posting evidence
    ([scope and handoff](docs/NEXT_ENGINEERING_PR.md)).
-2. Structured profile/eligibility is implemented in Issue #11; explainable
+2. Structured profile/eligibility is implemented through PR #24 (Issue #11); explainable
    ranking/preferences (#12) and document QA (#13) remain separate R2 work.
 3. Recoverable local preparation/tracking, then Windows scheduling and dashboard.
 4. Optional ChatGPT qualification in parallel; approved browser assistance next.

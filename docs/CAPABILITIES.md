@@ -1,10 +1,11 @@
 # Component status and evidence
 
-The roadmap was verified 2026-10-29 against develop at
+The original roadmap baseline was verified 2026-10-29 against develop at
 `3a79f555617453fc68dd51d36a9d1e51eabd2dcc` and merged through PR #21.
-This gateway integration revision also includes PR #8's prepared code and local
-qualification; no public endpoint or installed service is implied. Each status
-has a limited scope:
+Current implementation status includes PRs #22–#24 through accepted develop commit
+`e2b6e9742d48fb30500255714227d3ec1579b822`, plus the earlier PR #8 gateway.
+Code/local qualification does not establish public activation or installed services.
+Each status has a limited scope:
 
 - **Implemented:** reachable merged code with local coverage; not proof of live
   compatibility or operational readiness.
@@ -49,19 +50,37 @@ has a limited scope:
 | Issue #1 / PR #4 | Original one-provider scope complete; issue reconciled closed, PR merged | Greenhouse retained; #9 is additional scope |
 | Issue #2 / PR #5 | Complete, closed / merged | Final operator reuse check recorded without private identifiers |
 | Issue #3 / PRs #6–#7 | Issue open; both PRs merged | Local MCP done; actual authenticated ChatGPT call remains exit gate |
-| PR #8 | Gateway/lifecycle code included in this integration revision | Local qualification is documented; activation remains separate and independent of discovery |
+| PR #8 | Gateway/identity lifecycle code merged before PRs #22–#24 | Local qualification is documented; activation remains separate and independent of discovery |
+| Issues #9/#10, PRs #22/#23 | Discovery/registry and lifecycle merged | R1 engineering implemented; publication remains separate |
+| Issue #11 / PR #24 | Structured eligibility merged at `e2b6e9742d48fb30500255714227d3ec1579b822` | Only the eligibility slice of R2; #12/#13 remain |
 | Versions | Package metadata 0.4.0, `__init__.__version__` 0.1.0, MCP descriptor 0.4.0 | Existing drift, unchanged here; fix in release preparation |
 | Publication | No tags or GitHub Releases found | Changelog 0.1–0.4 entries are development history, not published-artifact evidence |
 
 ## Baseline checks and limits
 
-Before gateway integration, the roadmap baseline's Windows Python 3.12 suite ran on 2026-10-29:
+Before gateway integration, the roadmap baseline at
+`3a79f555617453fc68dd51d36a9d1e51eabd2dcc` ran on Windows/Python 3.12 on 2026-10-29:
 **184 passed, 3 skipped, 22 subtests passed**. Skips cover optional live exercises
 and a platform-specific permission check. CI tests Python 3.11–3.13 with Google
 and MCP extras. Counts describe that execution only, not usage, accuracy, provider
 coverage or hiring metrics. [Gateway qualification](MCP_GATEWAY_VALIDATION.md)
 records its larger suite and prior isolated provider proof separately. No live
 ATS/Google/OAuth test is required or repeated by merging the code.
+
+Later executions are separate evidence, not replacements for that baseline:
+
+| Revision / source | Environment | Recorded outcome |
+|---|---|---|
+| PR #8 final head `37fe0c7`; [gateway evidence](MCP_GATEWAY_VALIDATION.md) | Windows / Python 3.12 | 279 passed, 3 skipped, 22 subtests passed |
+| PR #23 final head `6201508`; [PR qualification](https://github.com/aryanramz/internship-agent/pull/23) | Windows / Python 3.12 | 592 passed, 5 skipped, 22 subtests passed |
+| PR #24 final head `0468d79`; [PR qualification](https://github.com/aryanramz/internship-agent/pull/24) | Windows / Python 3.12 | 864 passed, 5 skipped, 22 subtests passed |
+| Accepted merge `e2b6e9742d48fb30500255714227d3ec1579b822`; Codex migration audit, independently reproduced as the Codex onboarding baseline | Linux / Python 3.12.14, pytest 9.2.0, MCP 2.3.0; approved elevated execution | 862 passed, 7 skipped, 22 subtests passed |
+
+The migration audit's seven skips were three live ATS, one live Sheets, two
+`pwsh` preflight and one Windows PowerShell preview test. The Windows PR #24 run
+skipped four live checks and one POSIX permission test. Counts vary with platform
+and installed tooling; see [Codex verification](CODEX_DEVELOPMENT.md#verification-and-skips).
+New PRs must record their own results rather than adopting these counts.
 
 [Master roadmap](ROADMAP.md) · [Release acceptance](RELEASE_PLAN.md) ·
 [Threat model](THREAT_MODEL.md) · [Next PR](NEXT_ENGINEERING_PR.md)

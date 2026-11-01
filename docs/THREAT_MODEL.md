@@ -1,8 +1,9 @@
 # Threat model — local workflow baseline
 
 Current versus planned controls are reconciled in [CAPABILITIES.md](CAPABILITIES.md)
-against the roadmap baseline and subsequent
-[PR #8 gateway integration](https://github.com/aryanramz/internship-agent/pull/8).
+through [PR #24](https://github.com/aryanramz/internship-agent/pull/24) at
+`e2b6e9742d48fb30500255714227d3ec1579b822`, including discovery lifecycle
+(PR #23), structured eligibility and the earlier gateway (PR #8).
 Gateway/startup code is included; it must not be counted as an activated endpoint
 or installed service. Merging code does not authorize runtime activation.
 
@@ -45,9 +46,11 @@ or installed service. Merging code does not authorize runtime activation.
 ## Production readiness blockers
 
 The merged loopback HTTP adapter already validates pinned tokens and owner/client/
-resource/scope per invocation. Production exposure still needs reviewed routing,
-HTTPS qualification, operational identity/secret management, redacted observability,
-stronger SSRF/DNS controls, source backoff and qualified user-action confirmation.
+resource/scope per invocation. PR #8 supplies reviewed narrow routing, and PR #23
+supplies durable source backoff; neither establishes public operational readiness.
+Production exposure still needs actual HTTPS/routing qualification, operational
+identity/secret management, redacted observability, stronger SSRF/DNS controls and
+qualified user-action confirmation.
 Do not claim production security readiness from local tests.
 
 Planned dashboard mutations must enforce local session/Host/Origin/CSRF and

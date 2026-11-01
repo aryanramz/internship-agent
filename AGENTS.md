@@ -1,6 +1,8 @@
 # Agent instructions — Internship Agent repository
 
-This file guides ChatGPT Work, Codex and other code agents working in this repository.
+This file guides Codex, ChatGPT Work and other code agents working in this repository.
+Codex is the primary development workflow; the product remains independently usable
+through the local CLI. See [Codex setup and delivery](docs/CODEX_DEVELOPMENT.md).
 
 ## Mission
 
@@ -25,9 +27,25 @@ grant authorization or establish evidence of an external application.
 1. Read `README.md`, `docs/ARCHITECTURE.md`, `docs/CAPABILITIES.md`, `docs/ROADMAP.md`, `docs/THREAT_MODEL.md`, and the relevant implementation.
 2. Make the smallest implementation that satisfies the requested behavior.
 3. Add regression tests using fake profiles and mocked network/Gmail/Sheet responses.
-4. Run `python -m pytest -q`, `python scripts/check_repo_hygiene.py`, `python -m compileall -q src`.
+4. Install the declared `.[test,google,mcp]` extras and run `python -m pytest -q -ra`, `python scripts/check_repo_hygiene.py`, `python -m compileall -q src`, `python -m pip check` and the synthetic demo. Record the Python/dependency versions and explain every skip; see the setup guide for platform and network limitations.
 5. State exactly what passed locally and what still needs live authorization or validation. Do not claim any application was submitted unless real evidence exists.
 6. Branch from latest `develop`, target PRs to `develop`, and leave them unmerged for review. Never modify `main` directly or merge pending work as a planning side effect.
+
+## Codex delivery
+
+Start from a clean isolated workspace, fetch latest `origin/develop` and record its
+SHA. Create a focused feature or maintenance branch; never discard unrelated work
+or force-push to resolve divergence. Read the issue/dependencies before editing.
+Use synthetic fixtures and temporary databases; do not copy private candidate data
+or credentials into Codex Cloud. Review the diff, run relevant checks and prepare
+a PR to `develop` with exact evidence and limitations. Leave it unmerged for human
+review. Merge, release/promotion, public connectivity and consequential external
+actions retain separate authorization gates.
+
+Use inherited proxy/CA settings. If network or local test sockets are blocked,
+request the execution tool's supported elevated permissions for the specific
+necessary command; proceed only when approved. If unavailable or denied, report
+the blocked check. Never bypass the proxy or change network security settings.
 
 ## Roadmap execution and evidence
 
@@ -35,12 +53,13 @@ Issue #9 implements Greenhouse/Lever/Ashby validation and the compatible employe
 registry. Issue #10 adds durable incremental health/lifecycle; see
 `docs/DISCOVERY_LIFECYCLE.md`. Issue #11 adds [structured local eligibility](docs/ELIGIBILITY.md)
 and private versioned declarations without a database migration or MCP expansion.
-The next engineering scope after its acceptance is #12, explainable ranking,
+PR #24 merged Issue #11 at `e2b6e9742d48fb30500255714227d3ec1579b822`.
+The next feature scope is #12, explainable ranking,
 taxonomy and preferences; do not start it as incidental eligibility work.
 Issue #3 is an independent optional-interface track and
 stays open until an actual authenticated ChatGPT invocation succeeds.
 
-This revision includes PR #8's prepared gateway/identity-startup code and local
+The accepted baseline includes PR #8's prepared gateway/identity-startup code and local
 qualification. It does not activate Funnel or install services/tasks. Distinguish code,
 offline tests, developer live tests, operator reports and blocked/unexecuted
 checks. No fabricated implementation metrics. Follow `docs/RELEASE_PLAN.md`;

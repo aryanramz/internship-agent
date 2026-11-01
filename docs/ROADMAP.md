@@ -1,7 +1,9 @@
 # Master engineering roadmap
 
-Reconciled 2026-10-29 against develop at
-`3a79f555617453fc68dd51d36a9d1e51eabd2dcc`, source/tests and GitHub history.
+Originally reconciled 2026-10-29 against develop at
+`3a79f555617453fc68dd51d36a9d1e51eabd2dcc`. Implementation status now includes
+PRs #22–#24 through accepted develop commit
+`e2b6e9742d48fb30500255714227d3ec1579b822`; historical evidence retains its revision.
 This plan distinguishes merged code from pending review and future work. See the
 [component evidence matrix](CAPABILITIES.md), [architecture](ARCHITECTURE.md),
 [release gates](RELEASE_PLAN.md) and [next engineering PR](NEXT_ENGINEERING_PR.md).
@@ -52,11 +54,12 @@ approvals or evidence. No additional paid service is required or authorized.
 
 ## Development priorities
 
-1. Reconcile documentation/backlog against evidence (this change).
-2. Expand real discovery: three ATS providers and employer registry, then source
-   health and posting lifecycle.
-3. Model verified candidate facts and structured internship eligibility.
-4. Improve explainable ranking, preferences and verified documents.
+1. Maintain documentation/backlog against accepted evidence using the
+   [Codex development process](CODEX_DEVELOPMENT.md).
+2. Preserve completed discovery/registry and lifecycle work (#9/#10, PRs #22/#23).
+3. Preserve completed structured eligibility (#11, PR #24).
+4. Next feature: explainable ranking/preferences (#12), followed by verified
+   documents (#13); this onboarding change implements neither.
 5. Qualify one recoverable local preparation/tracking workflow.
 6. Add Windows unattended scheduling and a lightweight local dashboard.
 7. Qualify ChatGPT connectivity independently; it must not block local progress.

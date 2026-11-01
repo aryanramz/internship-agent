@@ -8,9 +8,11 @@ three-provider ATS qualification and the compatible employer registry;
 [incremental discovery, health/backoff and conservative availability](DISCOVERY_LIFECYCLE.md).
 R1 engineering acceptance is separate from formal release preparation/publication.
 
-This revision implements [Issue #11](https://github.com/aryanramz/internship-agent/issues/11):
+[PR #24](https://github.com/aryanramz/internship-agent/pull/24) merged
+[Issue #11](https://github.com/aryanramz/internship-agent/issues/11) at
+`e2b6e9742d48fb30500255714227d3ec1579b822`:
 [private versioned facts and evidence-backed structured eligibility](ELIGIBILITY.md).
-After its acceptance, the next engineering scope is
+The next feature scope is
 [Issue #12](https://github.com/aryanramz/internship-agent/issues/12), explainable
 ranking, taxonomy and user preferences. It has **not** been started by the
 eligibility implementation. Read the current issue and its dependencies before

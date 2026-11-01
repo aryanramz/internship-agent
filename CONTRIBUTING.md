@@ -2,6 +2,10 @@
 
 Contributions are welcome to improve job-source reliability, accuracy, accessibility, and safety.
 
+Codex is the primary development workflow. Use the [Codex development guide](docs/CODEX_DEVELOPMENT.md)
+for environment setup, complete offline checks, skip interpretation and approved
+sandbox permissions. These conventions also apply to manual contributions.
+
 1. Open an issue describing the bug or proposal. Do not attach real resumes, job-application records, OAuth tokens, mailbox exports or secrets.
 2. Read the [roadmap](docs/ROADMAP.md), [capability evidence](docs/CAPABILITIES.md) and issue dependencies. Branch from latest `develop` and make a small focused change; do not modify `main` directly.
 3. Add or update offline tests and documentation; source adapters should test against synthetic/mocked responses.
