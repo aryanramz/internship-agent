@@ -52,14 +52,14 @@ def test_legacy_is_readable_but_never_verified(tmp_path):
     result = packet(tmp_path, p)
     assert "Fictional Zoë" not in text(result["resume_path"])
     assert "REVIEW REQUIRED" in text(result["resume_path"])
-    trace = json.loads(Path(result["trace_path"]).read_text())
+    trace = json.loads(Path(result["trace_path"]).read_text(encoding="utf-8"))
     assert not any(row["claims"] for row in trace["paragraphs"])
     assert any(x["reason"] == "unverified" for x in trace["unresolved"])
 
 
 def test_exact_claim_trace_and_conservative_answers(tmp_path):
     p = profile(); result = packet(tmp_path, p)
-    trace = json.loads(Path(result["trace_path"]).read_text())
+    trace = json.loads(Path(result["trace_path"]).read_text(encoding="utf-8"))
     facts = {f["id"]: f for f in p["documents"]["facts"]}
     for row in trace["paragraphs"]:
         doc = Document(result[row["document"] + "_path"])
@@ -75,7 +75,7 @@ def test_exact_claim_trace_and_conservative_answers(tmp_path):
     assert "Kubernetes" not in letter
     answers = text(result["answers_path"])
     assert "Work authorization" in answers and "[USER INPUT REQUIRED]" in answers
-    qa = json.loads(Path(result["qa_path"]).read_text())
+    qa = json.loads(Path(result["qa_path"]).read_text(encoding="utf-8"))
     assert qa["structural_pass"]
     assert qa["rendering"]["status"] == "not_run"
     for key in ("resume", "letter", "answers"):
@@ -94,7 +94,7 @@ def test_stale_conflicting_and_unverified_claims_withheld(tmp_path):
     resume = text(result["resume_path"])
     assert "Invented" not in resume and "Fictional Zoë" not in resume
     assert "zoe@example.test" not in resume
-    trace = json.loads(Path(result["trace_path"]).read_text())
+    trace = json.loads(Path(result["trace_path"]).read_text(encoding="utf-8"))
     reasons = {x["reason"] for x in trace["unresolved"]}
     assert {"conflicting", "stale", "unverified"} <= reasons
 
@@ -225,7 +225,7 @@ def test_long_unicode_and_empty_skills_have_extractable_trace(tmp_path):
     result = packet(tmp_path, p)
     assert long in text(result['resume_path'])
     assert 'TECHNICAL SKILLS' not in text(result['resume_path'])
-    qa = json.loads(Path(result['qa_path']).read_text())
+    qa = json.loads(Path(result['qa_path']).read_text(encoding="utf-8"))
     assert qa['structural_pass']
     assert qa['files']['resume.docx']['warnings']
 
@@ -251,7 +251,7 @@ def test_unsafe_profile_links_withheld(tmp_path, value):
         'verified': True, 'source': 'Fictional review', 'reviewed_on': '2026-11-01'})
     result = packet(tmp_path, p)
     assert value not in text(result['resume_path'])
-    trace = json.loads(Path(result['trace_path']).read_text())
+    trace = json.loads(Path(result['trace_path']).read_text(encoding="utf-8"))
     assert {'path': '/github', 'reason': 'unsafe_link'} in trace['unresolved']
 
 
@@ -305,7 +305,7 @@ def test_metrics_need_their_own_attestation_and_item_identity(tmp_path):
     identity['verified'] = False
     result = packet(tmp_path, p)
     assert '3 Linux test machines' not in text(result['resume_path'])
-    assert {'path':'/projects/0/bullets/0', 'reason':'missing_item_identity'} in json.loads(Path(result['trace_path']).read_text())['unresolved']
+    assert {'path':'/projects/0/bullets/0', 'reason':'missing_item_identity'} in json.loads(Path(result['trace_path']).read_text(encoding="utf-8"))['unresolved']
 
 
 def test_qa_rejects_tables_external_relationships_and_changed_reading_order(tmp_path):
@@ -349,7 +349,7 @@ def test_job_overlap_changes_with_posting_and_links_stay_selectable_text(tmp_pat
     assert 'Linux, Python, Java' in resume
     assert resume.index('Linux Lab') < resume.index('Python Lab')
     assert p['github'] in resume
-    qa = json.loads(Path(result['qa_path']).read_text())
+    qa = json.loads(Path(result['qa_path']).read_text(encoding="utf-8"))
     assert qa['files']['resume.docx']['checks']['no_external_relationships']
 
 
