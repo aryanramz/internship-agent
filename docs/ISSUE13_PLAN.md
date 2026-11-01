@@ -24,7 +24,7 @@ SQLite, python-docx and CLI; no new runtime dependency or integration.
 - [x] Run full offline suite, hygiene, compileall, pip check, fresh synthetic demo,
   dependency audit and diff checks. Render representative DOCX with available
   tools, extract PDF text, inspect pages and record pagination/overflow limits.
-- [ ] Obtain independent correctness/security reviews, fix confirmed findings,
+- [x] Obtain independent correctness/security reviews, fix confirmed findings,
   rerun affected checks, push feature branch, open unmerged PR to develop and
   inspect all CI jobs (delivery evidence recorded in ISSUE13_VALIDATION.md).
 

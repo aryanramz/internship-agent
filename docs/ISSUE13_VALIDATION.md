@@ -37,6 +37,25 @@ The seven skips are expected qualification boundaries:
 installed; workflow configuration was unchanged, inspected, and is executed by PR
 CI rather than claimed locally linted. CI results are available on the PR checks.
 
+## GitHub CI
+
+[Implementation CI run 41344285799](https://github.com/aryanramz/internship-agent/actions/runs/41344285799)
+passed all four jobs on implementation commit `203b211a14b29739da6c37f39413820223398649`:
+
+| Job | Exact pytest result | Duration |
+|---|---|---:|
+| Python 3.11 | 1,020 passed, 5 skipped, 22 subtests passed | 25.78s |
+| Python 3.12 | 1,020 passed, 5 skipped, 22 subtests passed | 16.11s |
+| Python 3.13 | 1,020 passed, 5 skipped, 22 subtests passed | 27.15s |
+| Security | No known vulnerabilities found | Audit succeeded |
+
+Each matrix job also passed compile, hygiene (127 files, zero problems) and the
+synthetic demo. Hosted Linux has `pwsh`, so two preflight cases skipped locally
+passed in CI; the remaining five skips cover ATS/Sheets live opt-ins and Windows
+PowerShell. The PR remains open and unmerged at
+[PR #27](https://github.com/aryanramz/internship-agent/pull/27). Subsequent changes
+recording this evidence modify documentation only; the PR checks report their CI.
+
 ## Rendered document QA
 
 Renderer: **LibreOfficeDev 26.8.0.0.alpha0**, build
