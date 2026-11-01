@@ -204,3 +204,36 @@ def test_defaults_and_explicit_defaults_have_identical_results():
 def test_analysis_requests_cannot_enable_a_model_or_paid_service():
     with pytest.raises(ValueError,match='Invalid ranking configuration'):
         score(candidate=profile(ranking={'analysis':{'enabled':True,'provider':'unavailable'}}))
+
+
+@pytest.mark.parametrize('title,target',[
+    ('Cloud Engineer Intern','cloud economist'),
+    ('Software Engineer Intern','software procurement'),
+    ('Cloud Engineer Intern','cloud music engineer'),
+    ('Food Security Analyst Intern','cybersecurity'),
+    ('National Security Analyst Intern','information security'),
+    ('Security Analyst Intern','food security analyst'),
+    ('Security Intern','security'),
+])
+def test_review_target_specificity_and_noncyber_security_contexts(title,target):
+    assert not score(posting(title=title),profile(target_roles=[target]))['matched_roles']
+
+
+@pytest.mark.parametrize('experience',[[{}],[{'title':'   ','bullets':[],'stack':[]}]])
+def test_blank_experience_cannot_raise_confidence(experience):
+    full=posting(description='Use Python AWS and Terraform to build well documented cloud services.',compensation='USD 20/hour')
+    result=score(full,profile(experience=experience,ranking={'preferences':{'use_experience':True}}))
+    assert 'profile_experience' in result['ranking_explanation']['missing_information']
+    assert result['ranking_explanation']['confidence']!='supported'
+
+
+@pytest.mark.parametrize('mode',['on-site','on site','OnSite','ON_SITE'])
+def test_provider_onsite_spellings_respect_work_mode_avoidance(mode):
+    result=score(posting(work_mode=mode),profile(ranking={'preferences':{'avoid_work_modes':['onsite']}}))
+    assert result['components']['location']==0
+    assert result['ranking_explanation']['observed_evidence']['work_mode']=='onsite'
+
+
+def test_remote_substring_is_not_a_location_preference_match():
+    result=score(posting(location='Nonremote Office',work_mode='Unknown'),profile(preferred_locations=['Remote']))
+    assert result['components']['location']==2

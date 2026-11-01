@@ -78,6 +78,9 @@ def configuration(profile: dict) -> dict:
             total+=sum(map(len,parts))
             if total>100_000:
                 raise ValueError(_ERROR)
-            experience.append(' '.join(parts))
-    return dict(weights=weights,preferences=prefs,roles=roles,skills=skills,
+            experience.append(' '.join(parts).strip())
+    from .role_taxonomy import contains
+    experience_indices={skill:[i for i,material in enumerate(experience) if contains(material,skill)]
+                        for skill in skills} if prefs['use_experience'] else {}
+    return dict(experience_indices=experience_indices,weights=weights,preferences=prefs,roles=roles,skills=skills,
                 locations=locations,employers=employers,experience=experience)

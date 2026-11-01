@@ -45,9 +45,14 @@ def _freshness(value, now):
 
 def evaluate(job: dict, profile: dict, *, as_of: datetime | None = None) -> dict:
     from .ranking_config import configuration
-    from .role_taxonomy import role_match
     config=configuration(profile)
     now=as_of if as_of is not None else datetime.now(timezone.utc)
+    return _evaluate(job,config,now)
+
+
+def _evaluate(job: dict, config: dict, now: datetime, *, explain=True) -> dict:
+    """Invocation-local prepared profile; compact scoring precedes selection."""
+    from .role_taxonomy import role_match
     if not isinstance(now,datetime) or now.tzinfo is None or now.utcoffset() is None:
         raise ValueError("Ranking requires a timezone-aware clock")
     weights=config['weights']
@@ -63,20 +68,20 @@ def evaluate(job: dict, profile: dict, *, as_of: datetime | None = None) -> dict
     matched = [x for x in skills if _contains(text, x)]
     skill_score = min(1., len(matched) / min(7, max(3, len(skills))))
 
-    experience_matches=[{'skill':skill,'experience_index':i} for skill in matched
-                        for i,material in enumerate(config['experience']) if _contains(material,skill)]
+    indices=config['experience_indices']
     if preferences['use_experience']:
-        corroborated=len({item['skill'] for item in experience_matches})
+        corroborated=sum(bool(indices.get(skill)) for skill in matched)
         experience_score=corroborated/max(1,len(matched))
         skill_score=.8*skill_score+.2*experience_score
         effects['skills'].append('Configured experience corroboration: 80% skill coverage, 20% corroborated matches.')
     loc = f'{job.get("location", "")} {job.get("work_mode", "")}'.lower()
     prefs = config["locations"]
     location_matched = any(_contains(loc, x) for x in prefs)
-    remote = "remote" in loc
+    remote = _contains(loc,"remote")
     location_score = 1. if location_matched else (.8 if remote and "Remote" in prefs else .15)
 
     mode=str(job.get('work_mode','')).strip().casefold()
+    mode={'on-site':'onsite','on site':'onsite','on_site':'onsite'}.get(mode,mode)
     mode_source='work_mode'
     if mode not in {'remote','hybrid','onsite'}:
         mode='remote' if _contains(str(job.get('location','')),'remote') else ''
@@ -109,7 +114,7 @@ def evaluate(job: dict, profile: dict, *, as_of: datetime | None = None) -> dict
                       ('compensation',bool(job.get('compensation')))):
         if not known:
             missing.append(key)
-    if preferences['use_experience'] and not config['experience']:
+    if preferences['use_experience'] and not any(config['experience']):
         missing.append('profile_experience')
     if not skills:
         missing.append('profile_skills')
@@ -134,11 +139,25 @@ def evaluate(job: dict, profile: dict, *, as_of: datetime | None = None) -> dict
         flags.append("Citizenship/clearance language: verify requirements")
     if not job.get("description"):
         flags.append("No job description: ranking less reliable")
+    report={"job_id": job["id"], "score": score, "components": {k: round(v * weights[k]) for k,v in components.items()},
+            "matched_skills": matched, "matched_roles": matched_roles,
+            "eligibility": eligible, "flags": flags,
+            "reason": f"{len(matched)} profile skills referenced; role relevance {round(role * 100)}%; location relevance {round(location_score * 100)}%."}
+
+    if not explain:
+        return report
+    reference_count=sum(len(indices.get(skill,[])) for skill in matched)
+    experience_matches=[]
+    for skill in matched:
+        for i in indices.get(skill,[]):
+            if len(experience_matches)<100:
+                experience_matches.append({'skill':skill,'experience_index':i})
     explanation=dict(schema_version=1,score_kind='heuristic_fit',analysis='deterministic_only',
         as_of=now.isoformat(),eligibility='not_assessed_by_fit',weights=weights,units=components,
         contributions={key:round(weights[key]*value,4) for key,value in components.items()},
         rounding='Score rounds the summed raw contributions; displayed rounded components may differ.',
-        role=role_detail,experience_matches=experience_matches,preference_effects=effects,
+        role=role_detail,experience_matches=experience_matches,experience_matches_total=reference_count,
+        experience_matches_truncated=reference_count>100,preference_effects=effects,
         missing_information=missing,confidence='low' if not description.strip() or len(description.split())<8 else 'limited' if missing else 'supported',
         observed_evidence={'skills':[{'skill':skill,'sources':[key for key in ('title','description','location') if _contains(str(job.get(key,'')),skill)]} for skill in matched],
                            'work_mode':mode,'work_mode_source':mode_source},
@@ -146,7 +165,5 @@ def evaluate(job: dict, profile: dict, *, as_of: datetime | None = None) -> dict
                      'Profile facts are supplied by the operator, not independently verified.',
                      'Keyword occurrences do not establish proficiency or requirement strength.',
                      'Confidence describes input completeness, not calibrated accuracy.'])
-    return {"job_id": job["id"],"ranking_explanation":explanation, "score": score, "components": {k: round(v * weights[k]) for k,v in components.items()},
-            "matched_skills": matched, "matched_roles": matched_roles,
-            "eligibility": eligible, "flags": flags,
-            "reason": f"{len(matched)} profile skills referenced; role relevance {round(role * 100)}%; location relevance {round(location_score * 100)}%."}
+    report['ranking_explanation']=explanation
+    return report

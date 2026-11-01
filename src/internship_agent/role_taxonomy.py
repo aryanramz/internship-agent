@@ -17,7 +17,7 @@ ADJACENT = frozenset({frozenset(pair) for pair in (
     ('cloud','infrastructure'),('cloud','devops'),('infrastructure','devops'),
     ('infrastructure','systems'),('devops','software'),('systems','software'),('systems','it'))})
 # These title contexts do not establish a technical role merely from a track word.
-NONTECH = re.compile(r'\b(sales|marketing|recruit(?:er|ing)|kitchen|physical security|security guard|hr|human resources|business systems|civil|construction|electrical|mechanical|facilities)\b',re.I)
+NONTECH = re.compile(r'\b(sales|marketing|recruit(?:er|ing)|kitchen|physical security|security guard|hr|human resources|business systems|(?:food|national|homeland|international|social|economic|public|personal) security|civil|construction|electrical|mechanical|facilities)\b',re.I)
 
 
 def contains(text, phrase):
@@ -36,6 +36,22 @@ def tracks(value: str, *, title=False) -> set[str]:
     # Preserve acronym case in titles: the ordinary pronoun "it" is not a track.
     if (re.search(r'(?<!\w)IT(?!\w)',value) if title else contains(value,'it')):
         result.add('it')
+    if not title:
+        if value.casefold().strip() in {'cloud','infrastructure','devops','software','systems','it'}:
+            return {value.casefold().strip()}
+        # An alias embedded in an unknown occupation is not an equivalent target.
+        remainder=value.casefold()
+        spans=[]
+        for aliases in ALIASES.values():
+            for alias in aliases:
+                spans.extend(match.span() for match in re.finditer(r'(?<!\w)'+re.escape(alias)+r'(?!\w)',remainder))
+        spans.extend(match.span() for match in re.finditer(r'(?<!\w)it(?!\w)',remainder))
+        chars=list(remainder)
+        for start,end in spans:
+            chars[start:end]=' '*(end-start)
+        extra=set(re.findall(r'[a-z]+',''.join(chars)))-{'intern','internship','engineering','engineer','analyst','developer','student','summer','co','op'}
+        if extra:
+            return set()
     return result
 
 
@@ -46,7 +62,7 @@ def role_match(title: str, targets: list[str]) -> dict:
     relation='unmatched'
     for target in targets:
         wanted=tracks(target)
-        informative=set(re.findall(r'[a-z]+',target.casefold()))-{'intern','internship','engineering','engineer','analyst','student','summer','co','op'}
+        informative=set(re.findall(r'[a-z]+',target.casefold()))-{'intern','internship','engineering','engineer','analyst','student','summer','co','op','security','technology','information'}
         direct=bool(actual&wanted) or (not wanted and bool(informative) and not NONTECH.search(title) and contains(title,target))
         adjacent=any(frozenset((a,b)) in ADJACENT for a in actual for b in wanted)
         value=1.0 if direct else .65 if adjacent else 0.0

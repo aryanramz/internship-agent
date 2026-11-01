@@ -51,7 +51,8 @@ Freshness uses one timezone-aware clock per service invocation, not discovery ti
 Standalone `evaluate(..., as_of=...)` supports reproducible synthetic evaluation.
 ISO/RFC publication timestamps are supported; naive dates retain the historical UTC
 interpretation. Future/invalid dates now remain unknown rather than earning full
-freshness. Input/configuration is never rewritten.
+freshness. Remote-location inference now uses whole-token matching rather than
+accepting substrings such as `Nonremote`. Input/configuration is never rewritten.
 
 Ordering retains the legacy warning group (`review` before `unlikely`), then
 score descending, case-folded company and stable job ID. The added ID tie-break
@@ -88,8 +89,12 @@ the best direct/adjacent relation determines the role unit.
 
 Sales, marketing, recruiting, kitchen, physical security, security guard, HR/human
 resources, business systems, civil, construction, electrical, mechanical and
-facilities title contexts suppress technical taxonomy matching. This conservative
+facilities title contexts suppress technical taxonomy matching. Food, national,
+homeland, international, social, economic, public and personal security contexts
+also do not establish cybersecurity. This conservative
 rule can under-rank mixed roles; it avoids treating a keyword as qualification.
+Targets containing an alias plus an unrecognized occupation (for example `cloud
+economist` or `software procurement`) do not expand to the technical track.
 An unknown target matches only its complete phrase, with at least one informative
 word beyond generic intern/engineer/engineering/analyst/student/summer/co-op words.
 No stemming, arbitrary shared-word equivalence or learned taxonomy is implied.
@@ -142,7 +147,8 @@ objects select defaults; unknown keys/versions and malformed shapes fail safely.
 | `prefer_compensation` | Compensation only; defaults true, false gives neutral .5 irrespective of text presence |
 | `use_experience` | Skills only; defaults false, true combines 80% existing skill coverage + 20% fraction of matched skills also referenced in supplied experience |
 
-Work-mode values are remote/hybrid/onsite, case-insensitive. Explicit normalized
+Work-mode preference values are remote/hybrid/onsite, case-insensitive. Provider
+`on-site`, `on site` and `on_site` spellings normalize to onsite. Explicit normalized
 posting mode is preferred; a whole `remote` location token can supply an inferred
 mode, labeled separately. Unknown mode is not assumed to satisfy a preference.
 Exact case-insensitive positive/avoidance intersections are rejected. Broader
@@ -156,6 +162,12 @@ strings up to 2,000 characters, at most 100 bullet/stack entries each, and 100,0
 consumed text characters total. Only posting-matched profile skills can receive
 experience corroboration; missing experience is disclosed, never invented.
 Experience indices are private local references, not proof of employment or truth.
+Whitespace-only/empty objects remain missing evidence. Corroboration is prepared
+once per invocation; all candidates receive compact scoring before selection.
+Only returned rows receive detailed explanations, capped at 100 experience
+references per row, with `experience_matches_total` and
+`experience_matches_truncated` disclosing omissions. The cap never changes the
+score or corroborated-skill count.
 The ranking profile reader rejects duplicate JSON keys and input over 1 MiB.
 Legacy and eligibility-v2 profiles keep their schema; facts are not promoted into
 skills, and scoring never rewrites or independently verifies declarations.

@@ -116,3 +116,32 @@ def test_rank_profile_duplicate_keys_and_size_fail_safely(ledger):
         path.write_text(raw)
         with pytest.raises(ValueError,match='Invalid ranking configuration'):
             agent.ranked(str(path))
+
+
+def test_experience_explanations_are_bounded_after_selection(tmp_path):
+    import tracemalloc
+    agent=Agent(str(tmp_path/'bounded'),clock=lambda:NOW)
+    skills=[f'Tech{i:03}' for i in range(100)]
+    text=' '.join(skills)
+    for i in range(20):
+        sid=f'{i:024x}'
+        agent.store.upsert_job(Job(id=sid,source_id=sid,provider='synthetic',company='Example',
+            title='Cloud Intern',description=text,location='Example City',
+            job_url='https://example.com/'+sid,apply_url='https://example.com/'+sid))
+    path=tmp_path/'profile.json'
+    path.write_text(json.dumps(dict(target_roles=['cloud engineer'],skills=skills,
+        experience=[{'title':text} for _ in range(100)],ranking={'preferences':{'use_experience':True}})))
+    tracemalloc.start()
+    try:
+        result=agent.ranked(str(path),limit=1)
+        peak=tracemalloc.get_traced_memory()[1]
+    finally:
+        tracemalloc.stop()
+    assert len(result)==1
+    # Regression against retaining ~40MB of detail for twenty unselected candidates.
+    assert peak<10_000_000
+    exp=result[0]['ranking_explanation']
+    assert len(exp['experience_matches'])==100
+    assert exp['experience_matches_total']==10000
+    assert exp['experience_matches_truncated'] is True
+    assert result[0]['components']['skills']==25  # Evidence cap cannot change scoring.
