@@ -54,8 +54,9 @@ registry. Issue #10 adds durable incremental health/lifecycle; see
 `docs/DISCOVERY_LIFECYCLE.md`. Issue #11 adds [structured local eligibility](docs/ELIGIBILITY.md)
 and private versioned declarations without a database migration or MCP expansion.
 PR #24 merged Issue #11 at `e2b6e9742d48fb30500255714227d3ec1579b822`.
-The next feature scope is #12, explainable ranking,
-taxonomy and preferences; do not start it as incidental eligibility work.
+This feature branch implements #12 ranking, taxonomy and preferences; see
+[ranking contracts](docs/RANKING.md). After review/acceptance, #13 document QA
+is the next separate feature. Do not start it incidentally here.
 Issue #3 is an independent optional-interface track and
 stays open until an actual authenticated ChatGPT invocation succeeds.
 
@@ -71,7 +72,7 @@ do not bump versions or claim release completion from historical phase labels.
 - `registry.py`: compatible employer/source JSON, explicit no-fetch registration and inspection; never a second application ledger
 - `discovery_types.py` / `discovery_state.py`: bounded pages, additive migration, fenced recovery, durable retry rules and independent posting evidence; never application outcomes
 - `models.py` / `store.py`: durable job and application state
-- `scoring.py`: deterministic ranking and eligibility warnings
+- `scoring.py` / `ranking_config.py` / `role_taxonomy.py`: deterministic six-component ranking, bounded preferences and local explanations; MCP projects legacy fields
 - `eligibility_profile.py` / `eligibility_requirements.py` / `eligibility.py`: private versioned facts, evidence-anchored requirements and pure local three-state assessment; separate from fit and legal decisions
 - `documents.py`: factual resume/cover-letter drafting
 - `integrations/`: optional Google OAuth, alert parsing, Sheets synchronization

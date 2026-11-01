@@ -64,5 +64,10 @@
     "needs_sponsorship": null,
     "current_undergraduate": true
   },
-  "review_note": "SYNTHETIC DEMO DATA ONLY: Replace every field with verified facts in ignored config/profile.json before preparing real applications."
+  "review_note": "SYNTHETIC DEMO DATA ONLY: Replace every field with verified facts in ignored config/profile.json before preparing real applications.",
+  "ranking": {
+    "version": 1,
+    "weights": {},
+    "preferences": {}
+  }
 }

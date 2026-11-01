@@ -5,7 +5,9 @@ import re
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
-WEIGHTS = {"role": 35, "skills": 25, "location": 15, "recency": 10, "compensation": 10, "employer": 5}
+from .ranking_config import DEFAULT_WEIGHTS
+
+WEIGHTS = DEFAULT_WEIGHTS.copy()
 INTERN = re.compile(r"\b(intern(ship)?|co[- ]?op|summer analyst)\b", re.I)
 SENIOR = re.compile(r"\b(staff|principal|senior|sr\.|director)\b", re.I)
 
@@ -17,57 +19,106 @@ def _contains(text: str, phrase: str) -> bool:
 
 
 def _role_score(title: str, roles: list[str]) -> tuple[float, list[str]]:
-    found = []
-    for role in roles:
-        tokens = [x for x in re.findall(r"[a-z]+", role.lower()) if x not in {"intern", "internship", "engineer", "analyst"}]
-        if tokens and any(_contains(title, token) for token in tokens):
-            found.append(role)
-    if found:
-        return 1., found
-    # Broad IT, technology, automation or software role: viable but lower priority.
-    if any(_contains(title, word) for word in ["technology", "IT", "software", "systems", "engineering", "security"]):
-        return .50, []
-    return .12, []
+    from .role_taxonomy import role_match
+    match=role_match(title,roles)
+    return match['unit'],match['matched_targets']
 
 
-def evaluate(job: dict, profile: dict) -> dict:
+def _freshness(value, now):
+    if not isinstance(value,str) or not value.strip():
+        return .35,False
+    try:
+        try:
+            dt=datetime.fromisoformat(value.replace('Z','+00:00'))
+        except ValueError:
+            dt=parsedate_to_datetime(value)
+        if dt.tzinfo is None:
+            dt=dt.replace(tzinfo=timezone.utc)
+        if dt>now:
+            return .35,False
+        days=(now-dt).days
+        return (1. if days<=14 else .65 if days<=45 else .2),True
+    except (ValueError,TypeError,OverflowError,IndexError):
+        return .35,False
+
+
+
+def evaluate(job: dict, profile: dict, *, as_of: datetime | None = None) -> dict:
+    from .ranking_config import configuration
+    from .role_taxonomy import role_match
+    config=configuration(profile)
+    now=as_of if as_of is not None else datetime.now(timezone.utc)
+    if not isinstance(now,datetime) or now.tzinfo is None or now.utcoffset() is None:
+        raise ValueError("Ranking requires a timezone-aware clock")
+    weights=config['weights']
+    preferences=config['preferences']
+    missing=[]
+    effects={key:[] for key in weights}
     title = str(job["title"])
-    description = str(job.get("description", ""))
+    description = str(job.get("description") or "")
     text = " ".join([title, description, str(job.get("location", ""))]).lower()
-    role, matched_roles = _role_score(title, profile.get("target_roles", []))
-    skills = [str(x) for x in profile.get("skills", []) if str(x).strip()]
+    role_detail=role_match(title,config['roles'])
+    role,matched_roles=role_detail['unit'],role_detail['matched_targets']
+    skills = config["skills"]
     matched = [x for x in skills if _contains(text, x)]
     skill_score = min(1., len(matched) / min(7, max(3, len(skills))))
 
+    experience_matches=[{'skill':skill,'experience_index':i} for skill in matched
+                        for i,material in enumerate(config['experience']) if _contains(material,skill)]
+    if preferences['use_experience']:
+        corroborated=len({item['skill'] for item in experience_matches})
+        experience_score=corroborated/max(1,len(matched))
+        skill_score=.8*skill_score+.2*experience_score
+        effects['skills'].append('Configured experience corroboration: 80% skill coverage, 20% corroborated matches.')
     loc = f'{job.get("location", "")} {job.get("work_mode", "")}'.lower()
-    prefs = [x for x in profile.get("preferred_locations", []) if x]
+    prefs = config["locations"]
     location_matched = any(_contains(loc, x) for x in prefs)
     remote = "remote" in loc
     location_score = 1. if location_matched else (.8 if remote and "Remote" in prefs else .15)
 
-    # Published time, not our time of first discovery, determines freshness.
-    freshness = 0.35
-    if job.get("published_at"):
-        try:
-            dt = datetime.fromisoformat(str(job["published_at"]).replace("Z", "+00:00"))
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            days = (datetime.now(timezone.utc) - dt).days
-            freshness = 1. if days <= 14 else (.65 if days <= 45 else .2)
-        except ValueError:
-            try:
-                dt = parsedate_to_datetime(str(job["published_at"]))
-                days = (datetime.now(timezone.utc) - dt.astimezone(timezone.utc)).days
-                freshness = 1. if days <= 14 else (.65 if days <= 45 else .2)
-            except (ValueError, TypeError, IndexError):
-                pass
-    compensation_score = .8 if job.get("compensation") else .4
-    preferred_employers = profile.get("preferred_employers", [])
-    employer_score = 1. if preferred_employers and job.get("company", "").lower() in [x.lower() for x in preferred_employers] else .5
+    mode=str(job.get('work_mode','')).strip().casefold()
+    mode_source='work_mode'
+    if mode not in {'remote','hybrid','onsite'}:
+        mode='remote' if _contains(str(job.get('location','')),'remote') else ''
+        mode_source='inferred_from_location' if mode else 'unknown'
+    if preferences['work_modes']:
+        location_score=1. if mode in preferences['work_modes'] else .15
+        effects['location'].append('Configured work-mode preference replaces location matching.')
+    if mode in preferences['avoid_work_modes'] or any(_contains(loc,v) for v in preferences['avoid_locations']):
+        location_score=0.
+        effects['location'].append('Avoided work mode/location; fit preference only, not eligibility.')
+    freshness,date_known=_freshness(job.get('published_at'),now)
+    compensation_score=(.8 if job.get('compensation') else .4) if preferences['prefer_compensation'] else .5
+    if not preferences['prefer_compensation']:
+        effects['compensation'].append('Compensation presence preference disabled; neutral contribution.')
+    preferred_employers=config['employers']
+    company=str(job.get('company','')).casefold()
+    employer_score=1. if company in [v.casefold() for v in preferred_employers] else .5
+    if company in [v.casefold() for v in preferences['avoid_employers']]:
+        employer_score=0.
+        effects['employer'].append('Employer is avoided; fit preference only.')
+    if config['roles']:
+        effects['role'].append('Target roles compared with title-only taxonomy; adjacency is inferred relevance.')
+    if prefs and not preferences['work_modes']:
+        effects['location'].append('Profile preferred locations compared with posting location/work mode.')
+    if preferred_employers:
+        effects['employer'].append('Exact case-insensitive preferred employer matching.')
+    for key,known in (('title',bool(title.strip())),('description',bool(description.strip())),
+                      ('publication_date',date_known),('location',bool(str(job.get('location','')).strip())),
+                      ('work_mode',mode_source=='work_mode' and bool(mode)),
+                      ('compensation',bool(job.get('compensation')))):
+        if not known:
+            missing.append(key)
+    if preferences['use_experience'] and not config['experience']:
+        missing.append('profile_experience')
+    if not skills:
+        missing.append('profile_skills')
+    if not config['roles']:
+        missing.append('target_roles')
 
     components = dict(role=role, skills=skill_score, location=location_score, recency=freshness,
                       compensation=compensation_score, employer=employer_score)
-    score = round(sum(WEIGHTS[k] * components[k] for k in WEIGHTS))
+    score = round(sum(weights[k] * components[k] for k in weights))
     flags = []
     eligible = "review"
     if not INTERN.search(title):
@@ -83,7 +134,19 @@ def evaluate(job: dict, profile: dict) -> dict:
         flags.append("Citizenship/clearance language: verify requirements")
     if not job.get("description"):
         flags.append("No job description: ranking less reliable")
-    return {"job_id": job["id"], "score": score, "components": {k: round(v * WEIGHTS[k]) for k,v in components.items()},
+    explanation=dict(schema_version=1,score_kind='heuristic_fit',analysis='deterministic_only',
+        as_of=now.isoformat(),eligibility='not_assessed_by_fit',weights=weights,units=components,
+        contributions={key:round(weights[key]*value,4) for key,value in components.items()},
+        rounding='Score rounds the summed raw contributions; displayed rounded components may differ.',
+        role=role_detail,experience_matches=experience_matches,preference_effects=effects,
+        missing_information=missing,confidence='low' if not description.strip() or len(description.split())<8 else 'limited' if missing else 'supported',
+        observed_evidence={'skills':[{'skill':skill,'sources':[key for key in ('title','description','location') if _contains(str(job.get(key,'')),skill)]} for skill in matched],
+                           'work_mode':mode,'work_mode_source':mode_source},
+        limitations=['Heuristic fit is not eligibility or hiring probability.',
+                     'Profile facts are supplied by the operator, not independently verified.',
+                     'Keyword occurrences do not establish proficiency or requirement strength.',
+                     'Confidence describes input completeness, not calibrated accuracy.'])
+    return {"job_id": job["id"],"ranking_explanation":explanation, "score": score, "components": {k: round(v * weights[k]) for k,v in components.items()},
             "matched_skills": matched, "matched_roles": matched_roles,
             "eligibility": eligible, "flags": flags,
-            "reason": f"{len(matched)} verified skills referenced; role relevance {round(role * 100)}%; location relevance {round(location_score * 100)}%."}
+            "reason": f"{len(matched)} profile skills referenced; role relevance {round(role * 100)}%; location relevance {round(location_score * 100)}%."}

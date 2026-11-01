@@ -20,7 +20,9 @@ verification guidance. Treat its output as private; do not paste it into public
 issues or logs. Errors omit raw profile values and private paths.
 
 The rank flag adds `eligibility_assessment` containing only `outcome`,
-`required_rule_count` and `missing_information`. It preserves existing scores,
+`required_rule_count` and `missing_information`. Issue #12 adds an advisory
+`action` (`do_not_apply`, `manual_review`, or `review_posting`) without changing
+the evaluator. The flag preserves the same invocation's fit scores,
 ordering and defaults. Existing `rank`/preview fields named `eligibility` retain
 their legacy `review`/`unlikely` keyword-warning meaning for compatibility;
 they are not the new three-state decision. A high fit score never changes the
@@ -207,7 +209,8 @@ or make legal/hiring decisions. Review uncertain results locally and correct the
 explicit declarations or seek employer clarification. No automatic application
 answers or consequential actions are added.
 
-Issue #12 owns ranking taxonomy/preferences and remains a separate next scope.
+Issue #12 adds [ranking taxonomy/preferences](RANKING.md) in a separate feature
+branch; it does not change the eligibility evaluator.
 Issue #13 owns document claim tracing/QA. R2 also requires those issues and
 release preparation; this implementation does not publish a release. Issue #3
 remains open pending actual authenticated ChatGPT invocation. No external

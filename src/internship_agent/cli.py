@@ -82,13 +82,13 @@ def main():
         except (ValueError,OSError):
             p.exit(2,"Error: source registration or configuration is invalid; check the local registry and public board URL.\n")
         return
-    if args.command=="eligibility" or (args.command=="rank" and args.with_eligibility):
+    if args.command in {"eligibility","rank"}:
         try:
             reader=Agent(args.data,read_only=True)
-            result=reader.eligibility(args.job_id,args.profile) if args.command=="eligibility" else reader.ranked(args.profile,args.limit,args.min_score,include_eligibility=True)
+            result=reader.eligibility(args.job_id,args.profile) if args.command=="eligibility" else reader.ranked(args.profile,args.limit,args.min_score,include_eligibility=args.with_eligibility)
             print(json.dumps(result,indent=2,ensure_ascii=False))
         except (ValueError,OSError,sqlite3.Error):
-            p.exit(2,"Error: eligibility assessment requires an existing job/database, supported local profile and valid posting evidence.\n")
+            p.exit(2,"Error: ranking/eligibility requires an existing database, supported local profile and valid posting evidence.\n")
         return
     if args.command in {"source-health", "scans", "availability"}:
         from .discovery_state import DiscoveryState
