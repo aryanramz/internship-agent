@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from .sources import retrieve_page, normalize, SUPPORTED, AGGREGATORS, SourceError
 from .scoring import evaluate, _evaluate
-from .documents import create_documents,tailoring_report
+from .documents import create_packet,tailoring_report
 from .store import Store
 from .models import validate_board
 from .registry import board_identity, load_registry, read_configuration, registry_entry, register_sources
@@ -263,11 +263,15 @@ class Agent:
         return {"ranking":evaluate(job,profile,as_of=self.clock()),"tailoring":tailoring_report(job,profile),
                 "job_url":job["job_url"],"apply_url":job["apply_url"]}
 
-    def prepare(self, jid: str, profile_path: str) -> dict:
-        profile=self.load_profile(profile_path)
+    def prepare(self, jid: str, profile_path: str, *, variant="job", track=None) -> dict:
+        try:
+            profile=self._ranking_profile(profile_path)
+        except ValueError:
+            raise ValueError("Invalid document profile") from None
         job=self.store.get_job(jid)
-        rp,lp=create_documents(job,profile,str(self.root/"generated"))
-        return self.store.set_prepared(jid,rp,lp)
+        packet=create_packet(job,profile,str(self.root/"generated"),variant=variant,track=track)
+        record=self.store.set_prepared(jid,packet["resume_path"],packet["letter_path"])
+        return {**record, **packet}
 
     def ingest_alerts(self, query: str = "", limit: int = 30) -> dict:
         from .integrations.google_auth import GoogleGateway

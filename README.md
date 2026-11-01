@@ -32,7 +32,7 @@ submission or recruiter emailing**. See the [capability matrix](docs/CAPABILITIE
 | Discovery recovery | Durable page checkpoints, source health/backoff and separate posting evidence | Manual invocation; conservative coverage/closure policies; no unattended scheduler |
 | Fit scoring | Six components with bounded weights/preferences, title taxonomy, evidence/missingness and stable ordering; [ranking guide](docs/RANKING.md) | Heuristic fit; local explanations, conservative taxonomy, no calibrated accuracy |
 | Eligibility | Versioned private facts, posting evidence and separate eligible/uncertain/ineligible local reports | Controlled English extraction; missing/unverified/ambiguous facts need manual review; no legal determinations |
-| Documents | Single-column DOCX resume and cover-letter draft from a verified profile | No guarantee of passing ATS; requires human review |
+| Documents | Attested master/track/job DOCX variants, conservative letter/answer drafts, local claim trace and structural QA | Local attestation, not independent truth verification; rendering/human review required; [document guide](docs/DOCUMENTS.md) |
 | Tracking | SQLite status ledger with audit events and explicit approval step | Records confirmation evidence; doesn't independently verify submission |
 | Google | Gmail lead staging; exact Sheets previews, confirmed sync and local audit | Basic synthetic Sheets sync live-tested by operator; Gmail and broader scenarios remain unqualified |
 | MCP | Read-only stdio/HTTP tools and a narrow OAuth gateway with HTTPS resource identity | [Gateway qualification](docs/MCP_EXTERNAL_CONNECTIVITY.md); Funnel remains disabled and actual ChatGPT invocation is pending |
@@ -76,6 +76,8 @@ explicitly verified version 2 facts. Detailed report output is private. The
 three MCP tools and their minimal projections remain unchanged. Ranking preferences
 and detailed local explanations are documented in [the ranking guide](docs/RANKING.md);
 fit never overrides an uncertain/ineligible assessment.
+
+Document preparation and explicit fact attestation are documented in the [document guide](docs/DOCUMENTS.md).
 
 The demo creates `demo-output/` containing a fictional three-job database, ranking summary and DOCX resume/letter. It does not authenticate, search real jobs, submit forms, or send email. **Never use the synthetic profile as your real resume.**
 

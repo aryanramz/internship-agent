@@ -29,6 +29,18 @@ def render(**overrides):
     return load_helper().render_tasks(**settings)
 
 
+@pytest.mark.parametrize("prefix", [b"", b"\xef\xbb\xbf"], ids=["utf8", "utf8-bom"])
+def test_renderer_accepts_unicode_json_from_windows_powershell(prefix):
+    settings = dict(workspace="C:\\Synthetic \u03a9 Workspace\\agent",
+                    config_path=r"C:\Private\gateway.json", keycloak_home=r"C:\Providers\keycloak",
+                    user_sid="S-1-5-21-1000", windows_dir=r"C:\Windows")
+    request = prefix + json.dumps(settings, ensure_ascii=False).encode("utf-8")
+    result = subprocess.run([sys.executable, "-X", "utf8", str(HELPER), "render"],
+                            input=request, capture_output=True, check=False, timeout=15)
+    assert result.returncode == 0, result.stderr.decode("utf-8")
+    assert json.loads(result.stdout)["settings"] == settings
+
+
 def test_tasks_run_only_as_current_limited_user_and_restart_without_passwords():
     result = render()
     assert len(result["tasks"]) == 2

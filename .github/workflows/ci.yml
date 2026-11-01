@@ -49,3 +49,35 @@ jobs:
         run: python scripts/check_repo_hygiene.py
       - name: Demonstrate synthetic offline workflow
         run: python scripts/demo.py
+  windows-tests:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '0'
+      RUN_LIVE_ATS: '0'
+      RUN_LIVE_SHEETS: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Report native Windows encoding
+        run: |
+          python -c "import locale, platform, sys; print(platform.platform()); print(sys.version); print('locale.getencoding():', locale.getencoding()); print('locale.getpreferredencoding(False):', locale.getpreferredencoding(False)); print('UTF-8 mode:', sys.flags.utf8_mode); assert sys.platform == 'win32'; assert sys.flags.utf8_mode == 0"
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+      - name: Install package and declared optional dependencies
+        run: python -m pip install -e '.[test,google,mcp,security]'
+      - name: Check dependency consistency
+        run: python -m pip check
+      - name: Document variants and Unicode trace regression
+        run: python -m pytest tests/test_document_variants.py -v -ra
+      - name: Full offline suite
+        run: python -m pytest -q -ra
+      - name: Compile
+        run: python -m compileall -q src
+      - name: Check for private artifacts
+        run: python scripts/check_repo_hygiene.py
+      - name: Demonstrate synthetic offline workflow
+        run: python scripts/demo.py

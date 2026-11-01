@@ -139,6 +139,8 @@ class Store:
             r=c.execute("SELECT status,resume_path FROM applications WHERE job_id=?",(jid,)).fetchone()
             if not r or r["status"] != "prepared" or not r["resume_path"]:
                 raise ValueError("Application must first be prepared with a resume")
+            from .document_qa import verify_packet
+            verify_packet(r["resume_path"])
             c.execute("UPDATE applications SET status='approved', approved_at=?, updated_at=? WHERE job_id=?",(now_iso(),now_iso(),jid))
             self.event(c,jid,"approved",{"mode":"explicit confirmation phrase"})
         return self.get_job(jid)
