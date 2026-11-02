@@ -83,7 +83,28 @@ not an automated Codex Security scan or a production penetration test.
 Existing Linux Python 3.11/3.12/3.13, native Windows Python 3.12 with UTF-8 mode
 disabled, and dependency-security checks are retained. A separate Linux core-only
 job verifies SDK absence and runs workflow/recovery/migration/CLI tests. Exact
-hosted head/base/run/job results are recorded in the unmerged PR after completion.
+implementation-head results at `6781a51ede9bc9fced49c9398d0a2e6ad86136aa`:
+
+[CI run 41368268763](https://github.com/aryanramz/internship-agent/actions/runs/41368268763)
+passed all six jobs. Checkout logs confirm the exact head merged into baseline
+`ada3cda4c5a9207811a549db84a80fa4515513d0` for testing.
+
+| Job | Exact result | Pytest duration |
+|---|---|---:|
+| Windows / Python 3.12 | 1,060 passed, 5 skipped, 22 subtests passed | 145.98s |
+| Linux / Python 3.11 | 1,060 passed, 5 skipped, 22 subtests passed | 41.29s |
+| Linux / Python 3.12 | 1,060 passed, 5 skipped, 22 subtests passed | 43.97s |
+| Linux / Python 3.13 | 1,060 passed, 5 skipped, 22 subtests passed | 44.74s |
+| Core-only / Linux Python 3.12 | 38 passed; optional SDK absence asserted | 11.82s |
+| Security | No known vulnerabilities found | Audit succeeded |
+
+Windows reported `locale.getencoding(): cp1252` and UTF-8 mode 0. Its separate
+document regression step passed **36 tests in 9.13s**. Every full-suite test job
+also passed compilation, hygiene (**137 files, zero problems**) and the synthetic
+demo. Windows/core-only dependency consistency passed. Linux's five skips were
+the four live opt-ins and Windows PowerShell lifecycle preview; Windows skips are
+listed above. The unmerged PR records final-head results after the documentation
+follow-up, which does not change runtime or tests.
 
 The workflow qualifies process crash/restart, not power-loss durability across
 all OS/filesystem/storage combinations. Hardware durability, private backups and

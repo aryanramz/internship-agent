@@ -18,7 +18,7 @@ rows. Ledger user_version=3 fences older writers; SQLite remains the only ledger
   Submission evidence remains user-supplied/unverified, never employer receipt.
 - [x] Add local review/application/recover CLI commands and explicit regeneration;
   document the complete offline flow, legacy handling, recovery and limits.
-- [ ] Run failure injection, process restart, concurrency, migration and CLI tests;
+- [x] Run failure injection, process restart, concurrency, migration and CLI tests;
   full suite with extras, core-only environment, native Windows/Linux CI, audit,
   hygiene, compilation, dependency checks and synthetic demo. Obtain independent
   correctness/security reviews, fix confirmed issues, open an unmerged develop PR.
