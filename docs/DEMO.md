@@ -10,7 +10,12 @@ This demo requires no Google account, API key, job website, ChatGPT connection, 
 python scripts/demo.py
 ```
 
-Files appear in ignored `demo-output/`, including `agent.db`, `demo_summary.json`, and a generated DOCX resume and cover-letter draft under `generated/<job_id>/`.
+Files appear in ignored `demo-output/`, including `agent.db`, `demo_summary.json`,
+and the revision packet under `generated/operations/<operation_id>/<job_namespace>/revision-NNNNNN/`.
+The summary includes eligibility, a local review token, and an assertion that an
+identical preparation retry reused the same revision. It stops at prepared and
+does not approve, submit or claim employer receipt. See the
+[complete CLI workflow](LOCAL_WORKFLOW.md) for explicit review/approval/tracking.
 
 ## What to show on a portfolio video
 

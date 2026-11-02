@@ -16,7 +16,9 @@ from uuid import uuid4
 
 from .models import canonical_url
 
-VERSION = 2
+# Maximum supported ledger version. Discovery's own layout remains version 2;
+# the workflow migration sets version 3 to keep pre-workflow writers out.
+VERSION = 3
 AUTHORITATIVE_PROVIDERS = frozenset({'greenhouse', 'lever', 'ashby'})
 ERROR_CODES = frozenset({'network', 'network_error', 'http_error', 'rate_limited',
     'forbidden', 'not_found', 'unauthorized', 'invalid_payload', 'invalid_posting',

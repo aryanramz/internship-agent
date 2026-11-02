@@ -33,7 +33,7 @@ submission or recruiter emailing**. See the [capability matrix](docs/CAPABILITIE
 | Fit scoring | Six components with bounded weights/preferences, title taxonomy, evidence/missingness and stable ordering; [ranking guide](docs/RANKING.md) | Heuristic fit; local explanations, conservative taxonomy, no calibrated accuracy |
 | Eligibility | Versioned private facts, posting evidence and separate eligible/uncertain/ineligible local reports | Controlled English extraction; missing/unverified/ambiguous facts need manual review; no legal determinations |
 | Documents | Attested master/track/job DOCX variants, conservative letter/answer drafts, local claim trace and structural QA | Local attestation, not independent truth verification; rendering/human review required; [document guide](docs/DOCUMENTS.md) |
-| Tracking | SQLite status ledger with audit events and explicit approval step | Records confirmation evidence; doesn't independently verify submission |
+| Tracking | Recoverable preparation journal, exact-revision review/approval, idempotent operator-reported tracking and retained SQLite history | Evidence remains user-supplied/unverified; [local workflow and recovery](docs/LOCAL_WORKFLOW.md) |
 | Google | Gmail lead staging; exact Sheets previews, confirmed sync and local audit | Basic synthetic Sheets sync live-tested by operator; Gmail and broader scenarios remain unqualified |
 | MCP | Read-only stdio/HTTP tools and a narrow OAuth gateway with HTTPS resource identity | [Gateway qualification](docs/MCP_EXTERNAL_CONNECTIVITY.md); Funnel remains disabled and actual ChatGPT invocation is pending |
 
@@ -78,6 +78,10 @@ and detailed local explanations are documented in [the ranking guide](docs/RANKI
 fit never overrides an uncertain/ineligible assessment.
 
 Document preparation and explicit fact attestation are documented in the [document guide](docs/DOCUMENTS.md).
+
+Follow the [complete local workflow](docs/LOCAL_WORKFLOW.md) for eligibility,
+ranking, document review, revision-bound approval, recovery and operator-reported
+tracking. The CLI works without optional Google/MCP dependencies.
 
 The demo creates `demo-output/` containing a fictional three-job database, ranking summary and DOCX resume/letter. It does not authenticate, search real jobs, submit forms, or send email. **Never use the synthetic profile as your real resume.**
 
@@ -140,7 +144,8 @@ python -m compileall -q src
 
 [Architecture](docs/ARCHITECTURE.md) · [Capability matrix](docs/CAPABILITIES.md) · [Threat model](docs/THREAT_MODEL.md) · [Source coverage](docs/SOURCE_MATRIX.md) · [Master roadmap](docs/ROADMAP.md) · [Release gates](docs/RELEASE_PLAN.md) · [Demo](docs/DEMO.md) · [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md)
 
-GitHub Actions runs the existing Python 3.11–3.13 matrix and dependency audit on
+GitHub Actions runs the Python 3.11–3.13 Linux matrix, native Windows Python 3.12
+with UTF-8 mode disabled, a core-only workflow job and the dependency audit on
 pull requests, pushes to `main`/`develop`, and manual dispatch. It checks for common
 accidental private-file commits. The file-checker is not a substitute for full secret scanning or security review.
 
@@ -151,10 +156,10 @@ The [isolated Sheets validation guide](docs/SHEETS_VALIDATION.md) records operat
 1. Multi-provider ATS validation and employer registry are implemented in Issue #9;
    Issue #10, merged in PR #23, implements durable incremental scans, health and conservative posting evidence
    ([scope and handoff](docs/NEXT_ENGINEERING_PR.md)).
-2. Structured profile/eligibility is implemented through PR #24 (Issue #11); explainable
-   ranking/preferences (#12) are implemented in this feature branch pending review;
-   document QA (#13) remains separate R2 work and has not started here.
-3. Recoverable local preparation/tracking, then Windows scheduling and dashboard.
+2. Structured profile/eligibility, explainable ranking/preferences and document QA
+   (#11–#13) are included in the accepted baseline through merged PR #27.
+3. This branch implements recoverable local preparation/tracking (#14), pending
+   review. Windows scheduling (#15) and the dashboard remain separate future work.
 4. Optional ChatGPT qualification in parallel; approved browser assistance next.
 5. Verified recruiter workflows and analytics; optional cloud assessment last.
 

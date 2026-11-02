@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from .sources import retrieve_page, normalize, SUPPORTED, AGGREGATORS, SourceError
 from .scoring import evaluate, _evaluate
-from .documents import create_packet,tailoring_report
+from .documents import tailoring_report
 from .store import Store
 from .models import validate_board
 from .registry import board_identity, load_registry, read_configuration, registry_entry, register_sources
@@ -170,24 +170,8 @@ class Agent:
 
     def _ranking_profile(self, profile_path):
         """Read bounded private ranking input without duplicate-key overrides."""
-        def unique(pairs):
-            out={}
-            for key,value in pairs:
-                if key in out:
-                    raise ValueError()
-                out[key]=value
-            return out
-        try:
-            with open(profile_path,'rb') as stream:
-                raw=stream.read(1_048_577)
-            if len(raw)>1_048_576:
-                raise ValueError()
-            profile=json.loads(raw,object_pairs_hook=unique)
-            if not isinstance(profile,dict):
-                raise ValueError()
-            return profile
-        except (ValueError,UnicodeError,RecursionError,OSError):
-            raise ValueError('Invalid ranking configuration') from None
+        from .profile_io import read_profile
+        return read_profile(profile_path)
 
     def _eligibility_profile(self, profile_path):
         """Bounded private input; duplicate fields cannot silently change a fact."""
@@ -263,15 +247,19 @@ class Agent:
         return {"ranking":evaluate(job,profile,as_of=self.clock()),"tailoring":tailoring_report(job,profile),
                 "job_url":job["job_url"],"apply_url":job["apply_url"]}
 
-    def prepare(self, jid: str, profile_path: str, *, variant="job", track=None) -> dict:
+    def prepare(self, jid: str, profile_path: str, *, variant="job", track=None,
+                request_id=None, new_revision=False) -> dict:
         try:
             profile=self._ranking_profile(profile_path)
         except ValueError:
             raise ValueError("Invalid document profile") from None
-        job=self.store.get_job(jid)
-        packet=create_packet(job,profile,str(self.root/"generated"),variant=variant,track=track)
-        record=self.store.set_prepared(jid,packet["resume_path"],packet["letter_path"])
-        return {**record, **packet}
+        from .application_workflow import Workflow
+        return Workflow(self.store).prepare(jid, profile_path, profile, variant=variant, track=track,
+                                            request_id=request_id, new_revision=new_revision)
+
+    def recover(self, jid=None):
+        from .application_workflow import Workflow
+        return Workflow(self.store).recover(jid)
 
     def ingest_alerts(self, query: str = "", limit: int = 30) -> dict:
         from .integrations.google_auth import GoogleGateway

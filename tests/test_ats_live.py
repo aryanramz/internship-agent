@@ -74,7 +74,8 @@ def test_live_ingestion_and_repeat_preserves_history(tmp_path, monkeypatch, prov
     ids = sorted(original_ids)[:2]
     for jid in ids:
         agent.store.set_prepared(jid, "fictional-qualification-resume.docx", "fictional-qualification-letter.docx")
-    agent.store.approve(ids[1], f"APPROVE {ids[1]}")
+    from workflow_helpers import prepare_approved
+    prepare_approved(agent.store, ids[1])
     approved_at = agent.store.get_job(ids[1])["approved_at"]
     with agent.store.connection() as connection:
         before_events = [tuple(row) for row in connection.execute("SELECT * FROM events ORDER BY id")]

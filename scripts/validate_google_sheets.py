@@ -32,8 +32,13 @@ def _seed_store(store):
         store.set_prepared(jid,"synthetic-resume.docx","synthetic-letter.docx")
         ids.append(jid)
     # Fictional local state only, never a real submission or Google form action.
-    store.approve(ids[1],f"APPROVE {ids[1]}")
-    store.mark_submitted(ids[1],"SYNTHETIC TEST EVIDENCE - no external submission")
+    from internship_agent.application_workflow import Workflow
+    profile_path=Path(__file__).resolve().parents[1] / 'config/profile.example.json'
+    profile=json.loads(profile_path.read_text(encoding='utf-8'))
+    Workflow(store).prepare(ids[1],str(profile_path),profile)
+    token=store.review(ids[1])['review_token']
+    store.approve(ids[1],f"APPROVE {ids[1]}",review_token=token)
+    store.mark_submitted(ids[1],"SYNTHETIC TEST EVIDENCE - no external submission",approval_token=token)
     return ids
 
 

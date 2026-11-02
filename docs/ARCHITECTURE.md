@@ -88,15 +88,17 @@ permits guarded assessment/interview/offer/rejected/withdrawn transitions.
 `shortlisted` is also a declared status; do not infer a complete UI/state editor.
 The exact transition rules live in `Store`, not in prompts.
 
-Preparation can reset pre-submission approval. The ledger rejects preparation of
-submitted/completed states, but `Agent.prepare` currently generates files before
-that rejection, using deterministic filenames. A rejected preparation can therefore
-overwrite existing documents; file protection is not established. #14 must guard
-before generation and qualify file versioning/recovery. Recording submission requires approved state and nontrivial operator
-evidence. `APPROVE <job_id>` is an explicit local confirmation mechanism, not
-cryptographic human authentication. #14 must qualify document-version binding,
-failure recovery and repeat actions before any browser assistant depends on it.
-#17 will add only individually permitted, explicitly approved workflows.
+The Issue #14 branch adds `application_workflow.py` and additive workflow tables.
+Preparation rejects completed states before file work, journals an intent, uses
+PR #27's exclusive document revisions and reconciles interrupted file/DB steps.
+Only unchanged complete packets can acquire an exact job/profile/document review
+token. Approval and operator-reported submission require that token; retries do
+not duplicate records. Legacy history is retained, but unbound legacy drafts must
+be regenerated for new approval. See [the local workflow](LOCAL_WORKFLOW.md) for
+state guards, concurrency, recovery and durability limits. `submitted` remains an
+operator report with explicit unverified provenance, not verified employer
+receipt. No submission code or Issue #15 scheduling is added. #17 will require
+its own individually permitted, explicitly approved workflows.
 
 ## Optional integrations and security
 

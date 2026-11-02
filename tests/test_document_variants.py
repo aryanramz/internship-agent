@@ -9,6 +9,7 @@ import zipfile
 
 from docx import Document
 import pytest
+from workflow_helpers import approve_current, record_submission, prepare_current
 
 from internship_agent import documents
 
@@ -151,7 +152,7 @@ def test_service_regeneration_clears_approval_and_retains_completed_history(tmp_
     pp = tmp_path / 'profile.json'; pp.write_text(json.dumps(profile()))
     a = agent.prepare(JOB['id'], str(pp), variant='track', track='systems')
     original = Path(a['resume_path']).read_bytes()
-    agent.store.approve(JOB['id'], 'APPROVE ' + JOB['id'])
+    approve_current(agent.store, JOB['id'])
     b = agent.prepare(JOB['id'], str(pp), variant='master')
     assert b['status'] == 'prepared' and b['approved_at'] is None
     assert b['resume_path'] != a['resume_path']
@@ -159,8 +160,8 @@ def test_service_regeneration_clears_approval_and_retains_completed_history(tmp_
     assert Path(b['trace_path']).is_file() and Path(b['answers_path']).is_file()
     with pytest.raises(ValueError):
         agent.store.mark_submitted(JOB['id'], 'fictional receipt')
-    agent.store.approve(JOB['id'], 'APPROVE ' + JOB['id'])
-    agent.store.mark_submitted(JOB['id'], 'fictional receipt')
+    approve_current(agent.store, JOB['id'])
+    record_submission(agent.store, JOB['id'], 'fictional receipt')
     for state in ('submitted', 'assessment', 'interview', 'offer', 'rejected', 'withdrawn'):
         if state != 'submitted':
             with agent.store.connection() as conn:
@@ -179,11 +180,11 @@ def test_modified_revision_cannot_be_approved(tmp_path):
     store.upsert_job(Job(id=JOB['id'], provider='synthetic', source_id='one',
         title=JOB['title'], company=JOB['company'], location='Fictional City', description='', job_url='https://example.test/job/one',
         apply_url='https://example.test/job/one'))
-    result = packet(tmp_path)
-    store.set_prepared(JOB['id'], result['resume_path'], result['letter_path'])
+    result = prepare_current(store, JOB['id'])
+    token = store.review(JOB['id'])['review_token']
     Path(result['resume_path']).write_bytes(b'changed after review')
     with pytest.raises(ValueError, match='changed'):
-        store.approve(JOB['id'], 'APPROVE ' + JOB['id'])
+        store.approve(JOB['id'], 'APPROVE ' + JOB['id'], review_token=token)
     assert store.get_job(JOB['id'])['status'] == 'prepared'
 
 

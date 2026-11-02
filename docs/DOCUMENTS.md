@@ -115,16 +115,17 @@ page for font substitution, glyph coverage, wrapping, headings, page breaks,
 clipping and blank pages on the intended Word/LibreOffice environment. Extraction
 cannot measure pagination. A successful save is not visual QA.
 
-`prepare` still requires human `APPROVE JOB_ID` separately. Regeneration uses the
-existing SQLite transition to clear approval, keeps prior preparation events and
-retains old files. Approval checks new-format packet hashes and structural QA so
-accidental local edits require regeneration/review; legacy packets retain the
-existing approval path. This is not tamper-proof against the local OS account.
-Unresolved facts require human review even when structural checks pass.
+The Issue #14 branch adds a [recoverable local workflow](LOCAL_WORKFLOW.md).
+`review JOB_ID` returns the exact token for inspection; `approve` requires both
+`APPROVE JOB_ID` and `--review-token TOKEN`. Managed preparation retains source
+job/profile fingerprints and binds all five packet files, including QA itself.
+Identical retries reuse an unchanged current packet; `--new-revision` regenerates
+and invalidates approval. Old revisions and historical outcomes remain intact.
+Legacy draft paths remain readable but require managed regeneration for a new
+approval. Unresolved facts still need human review when structural checks pass.
 
-Completed applications retain their ledger state, approval/submission evidence and
-original files: the existing final ledger guard rejects replacing them. It can
-leave an unreferenced fresh revision because files are generated before that
-guard. **Issue #14 remains separate**: there is no file/DB transaction, restart
-reconciliation, submitted-state pre-generation guard, or redesigned submission
-proof. Approval does not send anything; no ATS success is promised.
+Completed applications are rejected before document creation. A durable intent
+and completion receipt support explicit restart reconciliation across filesystem
+and SQLite operations. This is not a cross-resource atomic transaction or
+protection against a malicious local OS account. No approval sends anything,
+authenticates source truth or guarantees an ATS outcome.

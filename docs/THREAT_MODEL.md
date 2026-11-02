@@ -41,8 +41,14 @@ inferred. Local traces contain private values/provenance and remain outside MCP
 projections. New exclusive revision directories preserve prior files. Structural
 QA and hashes detect accidental edits before approval, not malicious writes by
 the trusted OS account. Source pointers and review labels never open files or URLs.
-There is no file/DB transaction or restart reconciliation; those remain #14.
-Rendering and source truth still need human review.
+The Issue #14 branch journals preparation before file work and reconciles complete
+packets after process interruption. Pre-generation writer/state guards protect
+completed outcomes, and explicit review tokens bind job/profile/packet identity.
+Legacy path setters cannot promote a foreign packet into an approval binding.
+Submission provenance is always operator-supplied/unverified; no employer-receipt
+verification or external action is inferred. See [recovery limits](LOCAL_WORKFLOW.md).
+Rendering, source truth, private backups and local OS ACLs still need human care;
+there is no atomic filesystem/SQLite transaction or malicious-owner protection.
 
 ## Release checklist
 

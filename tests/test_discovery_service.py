@@ -20,8 +20,9 @@ def test_distinct_requisitions_with_same_canonical_url_keep_separate_history(tmp
     first, second = posting(), posting("two", url="https://example.com/jobs/shared?utm_source=fixture")
     assert store.upsert_job(first) == "added"
     store.set_prepared(first.id, "fictional.docx", "fictional-letter.docx")
-    store.approve(first.id, f"APPROVE {first.id}")
-    store.mark_submitted(first.id, "FICTIONAL-CONFIRMATION")
+    from workflow_helpers import prepare_approved, record_submission
+    prepare_approved(store, first.id)
+    record_submission(store, first.id, "FICTIONAL-CONFIRMATION")
     before = store.get_job(first.id)
     with store.connection() as c:
         events = [tuple(r) for r in c.execute("SELECT * FROM events ORDER BY id")]
