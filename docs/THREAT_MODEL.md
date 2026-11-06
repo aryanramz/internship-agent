@@ -91,3 +91,7 @@ local user; admin routes must remain private. MCP credentials are separate from
 Google OAuth tokens. ChatGPT receives necessary access/refresh credentials and
 requested tool results, while local files remain on the PC. No unauthenticated
 private-data endpoint, API billing, paid hosting or metered resource is authorized.
+
+## Local unattended scheduler
+
+The [Windows scheduler](WINDOWS_SCHEDULER.md) treats configured discovery as its only network authority; Google tokens grant no unattended authority. Task owner/action drift refuses controls, worker-held OS locks fence overlap, and missing/corrupt journals fail closed. Logs and notifications project allowlisted counts/categories. Same-account filesystem/ACL protection is trusted. No native task lifecycle qualification or installation is claimed from offline tests.

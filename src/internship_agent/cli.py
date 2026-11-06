@@ -3,11 +3,15 @@ import argparse
 import json
 import os
 import sqlite3
+import sys
 from pathlib import Path
 from .service import Agent
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "scheduler":
+        from .scheduler_windows import main as scheduler_main
+        return scheduler_main(sys.argv[2:])
     p=argparse.ArgumentParser(prog="internship-agent")
     p.add_argument("--data",default=os.environ.get("INTERNSHIP_AGENT_DATA","./data"))
     p.add_argument("--credentials-dir",default=None,help="Private Google credential directory (independent of --data)")
@@ -74,6 +78,7 @@ def main():
     sh.add_argument("--apply",action="store_true")
     sh.add_argument("--confirm",default="")
     cmds.add_parser("summary")
+    cmds.add_parser("scheduler",help="Owned current-user scheduling; see internship-agent scheduler --help")
     args=p.parse_args()
     if args.command in {"review", "application"}:
         try:
