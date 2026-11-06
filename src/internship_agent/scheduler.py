@@ -264,11 +264,15 @@ def summarize(summary, health):
             incomplete.add(skipped['source_id'])
     errors = summary.get('errors',[])
     failed_ids = incomplete | {e['source_id'] for e in errors if e.get('source_id')}
-    retry = max((h.get('next_retry_at') or h.get('lease_expires_at') or '' for h in health if h['source_id'] in failed_ids), default='')
+    restrictions = [h.get(key) for h in health if h['source_id'] in failed_ids
+                    for key in ('next_retry_at','lease_expires_at') if h.get(key)]
+    restrictions += [s['next_retry_at'] for s in summary.get('skipped',[])
+                     if s['source_id'] in failed_ids and s.get('next_retry_at')]
+    retry = max((datetime.fromisoformat(value) for value in restrictions), default=None)
     result = {'status':'partial' if errors or incomplete else 'success' if counts['sources'] else 'noop',
               'category':'provider' if errors else 'partial' if incomplete else 'none','counts':counts}
     if retry and result['status'] == 'partial':
-        result['retry_at'] = retry
+        result['retry_at'] = retry.isoformat()
     return clean_result(result)
 
 

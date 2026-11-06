@@ -328,3 +328,17 @@ print('locked',flush=True); time.sleep(60)
     finally:
         child.kill(); child.wait(timeout=5)
     assert execute(c,clock=lambda:NOW,work=lambda c:pytest.fail())['status']=='backoff'
+
+
+def test_skipped_retry_timestamp_survives_bounded_health_report():
+    deadline=(NOW+timedelta(hours=6)).isoformat()
+    summary={'errors':[],'by_source':[],'skipped':[{'source_id':'active','skip_reason':'cooldown','next_retry_at':deadline}]}
+    assert summarize(summary,[])['retry_at']==deadline
+
+
+def test_active_lease_and_cooldown_both_bound_retry():
+    cooldown=(NOW+timedelta(minutes=1)).isoformat()
+    lease=(NOW+timedelta(minutes=5)).isoformat()
+    summary={'errors':[],'by_source':[],'skipped':[{'source_id':'active','skip_reason':'busy','next_retry_at':lease}]}
+    health=[{'source_id':'active','status':'running','next_retry_at':cooldown,'lease_expires_at':lease}]
+    assert summarize(summary,health)['retry_at']==lease

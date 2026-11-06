@@ -17,4 +17,4 @@ Review focus: orphan worker overlap; stale/corrupt journal; DST/clock rollback; 
 - [x] Task 3: make daily integrations explicit opt-in, document operator/recovery/native qualification procedure, preserve CI and extend core CI scheduler coverage.
 - [ ] Task 4: run targeted/full Linux tests, hygiene/compile/pip/demo; independent correctness and security reviews with regression fixes; open unmerged PR to develop, collect exact Linux/Windows/security CI results and disclose native qualification limits.
 
-Progress: tasks 1–3 complete with synthetic tests; independent reviews and regression fixes complete. Local full suite 1108 passed / 8 skipped / 22 subtests. Task 4 delivery/CI tracked in the PR; native lifecycle gate stays open. See docs/SCHEDULER_VALIDATION.md.
+Progress: tasks 1–3 complete with synthetic tests; independent reviews and regression fixes complete. Local full suite 1110 passed / 8 skipped / 22 subtests. Task 4 delivery/CI tracked in PR #29; native lifecycle gate stays open. See docs/SCHEDULER_VALIDATION.md.
