@@ -1,0 +1,7 @@
+# Issue17 implementation plan and design
+
+Baseline635ea2faa85d59aa4a998648b452994a164f5615. One explicitly enabled local permitted fixture under the dashboard's exact authenticated loopback origin; no external ATS adapter. Reuse current approved packet integrity, verified applicable identity facts and existing SQLite transactions. No browser dependency in core/CLI.
+
+Implement independent journal and provenance mapping with one-use perstage tokens, session binding, expiry, source/job/profile/packet/form identity, unique active plan perjob and durable intent. Separate review, authorizefill, humanhandoff, revalidate, authorize manualfixtureintent, observe and manualreconcile. Never automate finalsubmit; fixture records simulatedobservations, not realapplication or verifiedreceipt. Intent alwaysblocksretry until explicitprovenance reconciliation; restart doesn't imply failure. Then integrate existing HTTP Host/Origin/auth/CSRF guard and safe UI; no genericbrowser endpoint or arbitraryURL.
+
+Tests: fakeclock/backend crash/concurrency/drift/replay/expiry; actualChromium keyboardchallengehandoff/intent/receipt/reconcile with externalnetworkblocked; full Linux Windows/core/browser/advisory/hygiene/demo/packaging; independent correctness/security reviews and regression fixes; unmergeddevelopPR exactevidence. No Issue18, no realdata/accounts/submissions, no integrationactivation or native taskinstallation. Liveproviderqualification remainsoutstanding.

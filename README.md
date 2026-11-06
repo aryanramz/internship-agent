@@ -180,3 +180,5 @@ Your resume, real profile, application database, imported messages, generated do
 For reviewed current-user Windows discovery scheduling and double-click controls, see [Windows scheduler](docs/WINDOWS_SCHEDULER.md). Native task lifecycle qualification remains outstanding; setup never installs without an exact approval phrase.
 
 For the private browser workspace, launch `internship-dashboard` or see the [local dashboard guide](docs/LOCAL_DASHBOARD.md). It uses your local SQLite ledger and explicit confirmations; no integrations are activated.
+
+A separately enabled [local sandbox assistance adapter](docs/BROWSER_ASSISTANCE.md) demonstrates per-action field review, manual challenge handoff and durable submission-intent reconciliation. It does not submit real applications.

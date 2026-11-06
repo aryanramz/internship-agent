@@ -372,6 +372,7 @@
     const actions = el("div", "detail-actions");
     const source = safeLink(job.job_url || job.apply_url, "Original posting  ↗");
     if (source) actions.append(source);
+    if (window.openAssistance) actions.append(button("Inspect sandbox plans", "button secondary", () => window.openAssistance(id, null)));
     if (!completed.has(status)) actions.append(button(status === "prepared" || status === "approved" ? "Prepare a revision" : "Prepare documents", "button primary", () => confirmPrepare(job)));
     if (status !== "discovered" && status !== "shortlisted") actions.append(button("Review current packet", "button secondary", () => loadReview(id)));
     body.append(actions);
@@ -472,6 +473,7 @@
       const status = review.status || state.detail?.application?.status || state.detail?.job?.status;
       const actions = el("div", "detail-actions");
       if (status === "prepared") actions.append(button("Approve reviewed revision", "button primary", () => confirmApprove(id, review)));
+      if (status === "approved" && window.openAssistance) actions.append(button("Review sandbox assistance", "button secondary", () => window.openAssistance(id,review.review_token)));
       if (status === "approved") actions.append(button("Record external submission", "button primary", () => confirmSubmitted(id, review)));
       if (completed.has(status) && status !== "withdrawn") actions.append(button("Record an outcome", "button primary", () => confirmStatus(id, review)));
       target.append(actions);
