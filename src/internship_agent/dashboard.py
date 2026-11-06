@@ -17,12 +17,14 @@ from urllib.parse import parse_qs, urlsplit
 MAX_BODY=16384
 ASSETS={'/':('dashboard_ui.html','text/html; charset=utf-8'),
         '/dashboard_ui.css':('dashboard_ui.css','text/css; charset=utf-8'),
-        '/dashboard_ui.js':('dashboard_ui.js','text/javascript; charset=utf-8')}
+        '/dashboard_ui.js':('dashboard_ui.js','text/javascript; charset=utf-8'),
+        '/browser_assistance_ui.js':('browser_assistance_ui.js','text/javascript; charset=utf-8')}
 
 class DashboardServer(ThreadingHTTPServer):
     daemon_threads=True
     allow_reuse_address=False
-    def __init__(self,root,*,port=8765,secret=None):
+    def __init__(self,root,*,port=8765,secret=None,sandbox_assistance=False):
+        self.sandbox_assistance=sandbox_assistance
         self.root=Path(root).resolve()
         self.secret=secret or secrets.token_urlsafe(32)
         self.sessions={}
@@ -86,6 +88,21 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200,Path(__file__).with_name(name).read_bytes(),mime=mime)
         sid,session=self.session()
         if not session:return self.error(401,'Unlock this local session first')
+        if url.path=='/api/assistance' or url.path.startswith('/sandbox/application/'):
+            if not self.server.sandbox_assistance:return self.error(403,'Sandbox assistance is not enabled')
+            def read_assistance():
+                adapter=self.assistance(sid)
+                if url.path.startswith('/sandbox/application/'):
+                    if url.query:return self.error(400,'Only the exact fixture URL is permitted')
+                    adapter.review(url.path.removeprefix('/sandbox/application/'))
+                    return self.send(200,Path(__file__).with_name('browser_assistance_fixture.html').read_bytes(),mime='text/html; charset=utf-8')
+                query=parse_qs(url.query,max_num_fields=2)
+                if any(len(v)!=1 for v in query.values()):return self.error(400,'Duplicate fields')
+                if set(query)=={'job_id'}:return self.send(200,{'plans':adapter.list_for_job(query['job_id'][0])})
+                if set(query)=={'id'}:return self.send(200,adapter.review(query['id'][0]))
+                return self.error(400,'A plan or job ID is required')
+            try:return read_assistance()
+            except (ValueError,OSError,sqlite3.Error,KeyError,TypeError):return self.error(400,'Sandbox plan unavailable; inspect current approval and reconciliation state')
         if url.path=='/api/session':return self.send(200,{'csrf':session['csrf']})
         if url.path.startswith('/api/'):
             route=url.path[5:]
@@ -141,6 +158,16 @@ class Handler(BaseHTTPRequestHandler):
         if self.path=='/logout':
             with self.server.session_lock:self.server.sessions.pop(sid,None)
             return self.send(200,{},extra={'Set-Cookie':'ia_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'})
+        if self.path=='/api/assistance':
+            if not self.server.sandbox_assistance:return self.error(403,'Sandbox assistance is not enabled')
+            action=payload.get('action')
+            if not isinstance(action,str) or payload.get('confirm')!=action:return self.error(400,'Explicit per-action confirmation required')
+            if not self.server.writer.acquire(blocking=False):return self.error(409,'An operation is running; inspect before retrying')
+            try:
+                adapter=self.assistance(sid)
+                if action=='create':return self.data_call(lambda:adapter.create(payload.get('id'),payload.get('review_token'),payload.get('challenge','none')))
+                return self.data_call(lambda:adapter.act(payload.get('plan_id'),action,payload.get('token'),payload))
+            finally:self.server.writer.release()
         from .dashboard_data import DashboardData
         if self.path=='/api/document':
             try:
@@ -151,6 +178,10 @@ class Handler(BaseHTTPRequestHandler):
         if not self.server.writer.acquire(blocking=False):return self.error(409,'An operation is already running. Wait, inspect status, then retry.')
         try:return self.data_call(lambda:DashboardData(self.server.root).action(payload.get('action'),payload))
         finally:self.server.writer.release()
+    def assistance(self,sid):
+        from hashlib import sha256
+        from .browser_assistance import Assistance
+        return Assistance(self.server.root,self.server.origin,sha256(sid.encode()).hexdigest(),enabled=self.server.sandbox_assistance)
     def do_PUT(self):self.error(405,'Method not allowed')
     do_DELETE=do_PUT
     do_PATCH=do_PUT
@@ -162,8 +193,9 @@ def main(argv=None):
     p=argparse.ArgumentParser(description='Private IPv4 loopback dashboard; no external integration activation')
     p.add_argument('--root',default=str(Path.cwd()))
     p.add_argument('--port',type=int,default=8765)
+    p.add_argument('--sandbox-assistance',action='store_true',help='Enable fictional loopback fixture only; never an employer adapter')
     args=p.parse_args(argv)
-    server=DashboardServer(args.root,port=args.port)
+    server=DashboardServer(args.root,port=args.port,sandbox_assistance=args.sandbox_assistance)
     print(f'Local dashboard: {server.origin}\nAccess secret (paste into unlock form; never into URL): {server.secret}',flush=True)
     print('Keep this terminal private. Ctrl+C stops the server and invalidates all sessions.',flush=True)
     try:server.serve_forever()

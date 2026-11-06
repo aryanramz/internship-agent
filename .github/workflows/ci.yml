@@ -67,7 +67,7 @@ jobs:
       - name: Verify optional SDKs are unavailable
         run: .core-venv/bin/python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('mcp', 'googleapiclient', 'google_auth_oauthlib'))"
       - name: Local workflow, recovery and migration tests without optional SDKs
-        run: .core-venv/bin/python -m pytest tests/test_application_workflow.py tests/test_workflow_cli.py tests/test_workflow_migration.py tests/test_scheduler.py tests/test_scheduler_windows.py tests/test_dashboard_http.py tests/test_dashboard_data.py -q -ra
+        run: .core-venv/bin/python -m pytest tests/test_application_workflow.py tests/test_workflow_cli.py tests/test_workflow_migration.py tests/test_scheduler.py tests/test_scheduler_windows.py tests/test_dashboard_http.py tests/test_dashboard_data.py tests/test_browser_assistance.py tests/test_assistance_http.py -q -ra
   windows-tests:
     runs-on: windows-latest
     timeout-minutes: 15
@@ -115,7 +115,7 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -e '.[test,browser]'
       - run: python -m playwright install --with-deps chromium
-      - run: python -m pytest tests/test_dashboard_browser.py -v -ra
+      - run: python -m pytest tests/test_dashboard_browser.py tests/test_browser_assistance_e2e.py -v -ra
       - uses: actions/upload-artifact@v4
         if: always()
         with:
