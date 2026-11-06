@@ -178,3 +178,5 @@ Your resume, real profile, application database, imported messages, generated do
 > **Important:** This project helps organize and prepare applications. It cannot guarantee an ATS pass, an interview, employment, or that a particular posting is currently open.
 
 For reviewed current-user Windows discovery scheduling and double-click controls, see [Windows scheduler](docs/WINDOWS_SCHEDULER.md). Native task lifecycle qualification remains outstanding; setup never installs without an exact approval phrase.
+
+For the private browser workspace, launch `internship-dashboard` or see the [local dashboard guide](docs/LOCAL_DASHBOARD.md). It uses your local SQLite ledger and explicit confirmations; no integrations are activated.

@@ -13,10 +13,12 @@ dependencies = ["python-docx>=1.2,<2"]
 mcp = ["mcp>=2.3,<3", "PyJWT[crypto]>=2.12,<3"]
 google = ["google-api-python-client>=2.120,<3", "google-auth-oauthlib>=1.2,<2"]
 test = ["pytest>=8"]
+browser = ["playwright>=1.48,<2"]
 security = ["pip-audit>=2.9,<3"]
 
 [project.scripts]
 internship-agent = "internship_agent.cli:main"
+internship-dashboard = "internship_agent.dashboard:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -34,4 +36,4 @@ omit = ["*/mcp_server.py"]
 show_missing = true
 
 [tool.setuptools.package-data]
-internship_agent = ["scheduler_control.ps1"]
+internship_agent = ["scheduler_control.ps1", "dashboard_ui.html", "dashboard_ui.css", "dashboard_ui.js"]
