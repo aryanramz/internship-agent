@@ -34,6 +34,14 @@ def _safe_cell(value):
 def export_append_candidates(store: Store, output: str, include_unapplied: bool = False) -> dict:
     """Creates CSV rows for review. Does not edit or synchronize any sheet."""
     items = store.list_jobs(1000)
+    def document_version(value):
+        if not value:
+            return ''
+        path = Path(value)
+        try:
+            return path.resolve().relative_to((store.path.parent / 'generated').resolve()).as_posix()
+        except ValueError:
+            return path.name
     rows=[]
     for j in items:
         if not include_unapplied and j["status"] in {"discovered","shortlisted"}:
@@ -43,9 +51,8 @@ def export_append_candidates(store: Store, output: str, include_unapplied: bool 
         app_date=r["submitted_at"][:10] if r and r["submitted_at"] else ""
         rows.append(["",j["company"],j["title"],j["source_id"],_track(j["title"]),j["location"],j["work_mode"],
                      j["job_url"],app_date,"",STATUS_MAP[j["status"]],"Medium",
-                     Path(j["resume_path"]).name if j.get("resume_path") else "",
-                     Path(j["letter_path"]).name if j.get("letter_path") else "",
-                     "","","","",f"Agent ID: {j['id']}; Source: {j['provider']}"])
+                     document_version(j.get("resume_path")),document_version(j.get("letter_path")),
+                     "","","","",f"Agent ID: {j['id']}; Source: {j['provider']}; Submission evidence is operator-supplied; employer receipt unverified"])
     path=Path(output);path.parent.mkdir(parents=True,exist_ok=True)
     with path.open("w",newline="",encoding="utf-8-sig") as f:
         writer=csv.writer(f);writer.writerow(COLUMNS);writer.writerows([[_safe_cell(v) for v in r] for r in rows])

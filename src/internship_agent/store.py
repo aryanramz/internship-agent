@@ -55,6 +55,8 @@ class Store:
                 raise ValueError("Database schema is newer than this application supports")
             c.executescript(SCHEMA)
             migrate(c)
+            from .workflow_schema import migrate as migrate_workflow
+            migrate_workflow(c)
 
     @contextmanager
     def connection(self):
@@ -86,6 +88,7 @@ class Store:
 
     def _upsert_job(self, c, job: Job) -> str:
         """Share one transaction with source evidence and its durable checkpoint."""
+        c.execute('UPDATE jobs SET id=id WHERE 0')
         url = canonical_url(job.job_url)
         existing = c.execute("SELECT id FROM jobs WHERE id=?", (job.id,)).fetchone()
         c.execute("""INSERT INTO jobs(id,provider,company,source_id,title,location,description,job_url,canonical_url,apply_url,work_mode,published_at,compensation,discovered_at,last_seen_at)
@@ -102,6 +105,14 @@ class Store:
             c.execute("INSERT INTO applications(job_id,status,updated_at) VALUES(?,?,?)",(job.id,"discovered",now_iso()))
             self.event(c,job.id,"discovered",{"provider":job.provider,"url":job.job_url})
             return "added"
+        from .application_workflow import job_snapshot, COMPLETED
+        from .document_profile import digest
+        current = dict(c.execute('SELECT * FROM jobs WHERE id=?', (job.id,)).fetchone())
+        binding = c.execute('SELECT job_sha FROM application_bindings WHERE job_id=?', (job.id,)).fetchone()
+        status = c.execute('SELECT status FROM applications WHERE job_id=?', (job.id,)).fetchone()[0]
+        if binding and status not in COMPLETED and binding['job_sha'] != digest(job_snapshot(current)):
+            c.execute('UPDATE application_bindings SET approved_token=NULL WHERE job_id=?', (job.id,))
+            c.execute("UPDATE applications SET status='prepared',approved_at=NULL WHERE job_id=? AND status='approved'", (job.id,))
         return "updated"
 
     def list_jobs(self, limit: int = 100) -> list[dict]:
@@ -116,52 +127,50 @@ class Store:
             r=c.execute("""SELECT j.*,a.status,a.approved_at,a.resume_path,a.letter_path,
                           a.submission_evidence,a.submitted_at FROM jobs j
                           JOIN applications a ON a.job_id=j.id WHERE j.id=?""",(jid,)).fetchone()
-        if not r:
-            raise ValueError("Unknown job ID")
-        return dict(r)
+            if not r:
+                raise ValueError("Unknown job ID")
+            evidence_kind = None
+            if r['submission_evidence']:
+                has_table = c.execute("SELECT 1 FROM sqlite_master WHERE name='submission_records' AND type='table'").fetchone()
+                record = c.execute('SELECT kind FROM submission_records WHERE job_id=?', (jid,)).fetchone() if has_table else None
+                evidence_kind = record['kind'] if record else 'legacy_user_supplied'
+        return {**dict(r), 'submission_evidence_kind': evidence_kind, 'employer_receipt_verified': False}
 
     def set_prepared(self, jid: str, resume_path: str, letter_path: str) -> dict:
-        with self.connection() as c:
-            rec=c.execute("SELECT status FROM applications WHERE job_id=?",(jid,)).fetchone()
-            if not rec:
-                raise ValueError("Unknown job ID")
-            if rec["status"] in {"submitted", "assessment", "interview", "offer", "rejected", "withdrawn"}:
-                raise ValueError("Cannot overwrite documents for a completed application")
-            c.execute("""UPDATE applications SET status='prepared',approved_at=NULL,resume_path=?,letter_path=?,
-                         updated_at=? WHERE job_id=?""", (resume_path,letter_path,now_iso(),jid))
-            self.event(c,jid,"prepared",{"resume_path":resume_path,"letter_path":letter_path})
-        return self.get_job(jid)
+        from .application_workflow import Workflow
+        return Workflow(self).import_prepared(jid, resume_path, letter_path)
 
-    def approve(self, jid: str, phrase: str) -> dict:
-        if phrase != f"APPROVE {jid}":
-            raise ValueError("Approval requires exact phrase: APPROVE <job_id>")
-        with self.connection() as c:
-            r=c.execute("SELECT status,resume_path FROM applications WHERE job_id=?",(jid,)).fetchone()
-            if not r or r["status"] != "prepared" or not r["resume_path"]:
-                raise ValueError("Application must first be prepared with a resume")
-            from .document_qa import verify_packet
-            verify_packet(r["resume_path"])
-            c.execute("UPDATE applications SET status='approved', approved_at=?, updated_at=? WHERE job_id=?",(now_iso(),now_iso(),jid))
-            self.event(c,jid,"approved",{"mode":"explicit confirmation phrase"})
-        return self.get_job(jid)
+    def review(self, jid):
+        from .application_workflow import Workflow
+        return Workflow(self).review(jid)
 
-    def mark_submitted(self, jid: str, confirmation: str) -> dict:
-        if not confirmation or len(confirmation.strip()) < 6:
-            raise ValueError("Provide a real submission confirmation identifier or URL")
+    def approve(self, jid: str, phrase: str, *, review_token=None) -> dict:
+        from .application_workflow import Workflow
+        return Workflow(self).approve(jid, phrase, review_token)
+
+    def mark_submitted(self, jid: str, confirmation: str, *, approval_token=None) -> dict:
+        from .application_workflow import Workflow
+        return Workflow(self).mark_submitted(jid, confirmation, approval_token)
+
+    def application_report(self, jid):
+        application = self.get_job(jid)
         with self.connection() as c:
-            r=c.execute("SELECT status FROM applications WHERE job_id=?",(jid,)).fetchone()
-            if not r or r["status"] != "approved":
-                raise ValueError("Submission must follow approved state")
-            c.execute("UPDATE applications SET status='submitted',submitted_at=?,submission_evidence=?,updated_at=? WHERE job_id=?",
-                      (now_iso(),confirmation.strip(),now_iso(),jid))
-            self.event(c,jid,"submitted",{"evidence":confirmation.strip()})
-        return self.get_job(jid)
+            events = [dict(r) for r in c.execute('SELECT * FROM events WHERE job_id=? ORDER BY id', (jid,))]
+            exists = c.execute("SELECT 1 FROM sqlite_master WHERE name='preparation_operations'").fetchone()
+            operations = [dict(r) for r in c.execute('SELECT operation_id,state,created_at,completed_at FROM preparation_operations WHERE job_id=? ORDER BY created_at,operation_id', (jid,))] if exists else []
+        return {'application': application, 'events': events, 'preparations': operations,
+                'note': 'Submission status/evidence is operator-reported, not independently verified employer receipt.'}
 
     def update_status(self, jid: str, status: str, evidence: str = "") -> dict:
         if status not in {"assessment","interview","offer","rejected","withdrawn"}:
             raise ValueError("Only post-application statuses can be set here")
         with self.connection() as c:
+            c.execute('BEGIN IMMEDIATE')
             r=c.execute("SELECT status FROM applications WHERE job_id=?",(jid,)).fetchone()
+            payload = {'new_status': status, 'evidence': evidence}
+            latest = c.execute("SELECT payload_json FROM events WHERE job_id=? AND event_type='status_updated' ORDER BY id DESC LIMIT 1", (jid,)).fetchone()
+            if r and r['status'] == status and latest and json.loads(latest[0]) == payload:
+                return self.get_job(jid)
             if not r or r["status"] not in {"submitted","assessment","interview","offer","rejected"}:
                 raise ValueError("Cannot set outcome for a job without confirmed submission")
             c.execute("UPDATE applications SET status=?, updated_at=? WHERE job_id=?", (status,now_iso(),jid))

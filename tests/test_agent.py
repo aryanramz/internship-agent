@@ -9,6 +9,7 @@ from internship_agent.scoring import evaluate
 from internship_agent.documents import create_documents
 from internship_agent.tracker import export_append_candidates,COLUMNS
 import csv
+from workflow_helpers import prepare_approved, record_submission
 
 BOARD={"provider":"greenhouse","company":"Acme Corp","token":"acme"}
 
@@ -81,8 +82,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("DRAFT",lp)
         self.store.set_prepared(self.j.id,rp,lp)
         with self.assertRaises(ValueError):self.store.approve(self.j.id,"yes")
-        self.store.approve(self.j.id,f"APPROVE {self.j.id}")
-        self.store.mark_submitted(self.j.id,"Employer confirmation #S123456")
+        prepare_approved(self.store,self.j.id)
+        record_submission(self.store,self.j.id,"Employer confirmation #S123456")
         self.assertEqual(self.store.get_job(self.j.id)["status"],"submitted")
         with self.assertRaises(ValueError):self.store.mark_submitted(self.j.id,"another")
     def test_tracker_compatible_columns(self):

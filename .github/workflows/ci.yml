@@ -49,6 +49,25 @@ jobs:
         run: python scripts/check_repo_hygiene.py
       - name: Demonstrate synthetic offline workflow
         run: python scripts/demo.py
+  core-workflow:
+    runs-on: ubuntu-latest
+    env:
+      RUN_LIVE_ATS: '0'
+      RUN_LIVE_SHEETS: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install core and test dependencies without optional SDKs
+        run: |
+          python -m venv .core-venv
+          .core-venv/bin/python -m pip install -e '.[test]'
+          .core-venv/bin/python -m pip check
+      - name: Verify optional SDKs are unavailable
+        run: .core-venv/bin/python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('mcp', 'googleapiclient', 'google_auth_oauthlib'))"
+      - name: Local workflow, recovery and migration tests without optional SDKs
+        run: .core-venv/bin/python -m pytest tests/test_application_workflow.py tests/test_workflow_cli.py tests/test_workflow_migration.py -q -ra
   windows-tests:
     runs-on: windows-latest
     timeout-minutes: 15

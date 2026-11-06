@@ -17,8 +17,9 @@ def workflow(tmp_path):
         job_url="https://example.com/jobs/fixture",apply_url="https://example.com/jobs/fixture")
     agent.store.upsert_job(job)
     agent.store.set_prepared(jid,"fictional-resume.docx","fictional-letter.docx")
-    agent.store.approve(jid,f"APPROVE {jid}")
-    agent.store.mark_submitted(jid,"FICTIONAL-CONFIRMATION")
+    from workflow_helpers import prepare_approved, record_submission
+    prepare_approved(agent.store,jid)
+    record_submission(agent.store,jid,"FICTIONAL-CONFIRMATION")
     raw = {"name":"Fictional Student","target_roles":["cloud infrastructure"],"skills":["AWS","Python","Terraform","Linux","SQL"],
         "preferred_locations":["Example City"],"profile_version":2,"candidate_facts":[
             {"id":"enrollment","field":"enrolled","value":False,"status":"known","qualifiers":{},

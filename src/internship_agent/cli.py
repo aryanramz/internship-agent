@@ -29,8 +29,17 @@ def main():
     a=cmds.add_parser("prepare");a.add_argument("job_id");a.add_argument("--profile",default="config/profile.json")
     a.add_argument("--variant", choices=("master", "track", "job"), default="job")
     a.add_argument("--track", choices=("cloud", "infrastructure", "devops", "security", "software", "systems", "it"))
+    a.add_argument("--request-id", default=None, help="Stable identifier for retrying this exact preparation")
+    a.add_argument("--new-revision", action="store_true", help="Regenerate identical inputs and clear prior approval")
+    for name in ("review", "application"):
+        a=cmds.add_parser(name,help="Inspect private local application/revision evidence")
+        a.add_argument("job_id")
+    a=cmds.add_parser("recover",help="Reconcile interrupted preparation; never approve, submit or delete files")
+    a.add_argument("--job-id",default=None)
     a=cmds.add_parser("approve");a.add_argument("job_id");a.add_argument("confirmation_phrase")
+    a.add_argument("--review-token",required=True,help="Exact token returned by review for the documents inspected")
     a=cmds.add_parser("mark-submitted");a.add_argument("job_id");a.add_argument("evidence")
+    a.add_argument("--approval-token",required=True,help="Exact approved review token; evidence remains user-supplied/unverified")
     a=cmds.add_parser("status");a.add_argument("job_id");a.add_argument("outcome",choices=["assessment","interview","offer","rejected","withdrawn"]);a.add_argument("--evidence",default="")
     a=cmds.add_parser("export-tracker");a.add_argument("--output",default="data/tracker_append_candidates.csv");a.add_argument("--include-unapplied",action="store_true")
     add=cmds.add_parser("add-source")
@@ -66,6 +75,14 @@ def main():
     sh.add_argument("--confirm",default="")
     cmds.add_parser("summary")
     args=p.parse_args()
+    if args.command in {"review", "application"}:
+        try:
+            reader=Agent(args.data,read_only=True)
+            result=reader.store.review(args.job_id) if args.command=="review" else reader.store.application_report(args.job_id)
+            print(json.dumps(result,indent=2,ensure_ascii=True))
+        except (ValueError,OSError,sqlite3.Error,KeyError,TypeError):
+            p.exit(2,"Error: application review requires a complete unchanged local preparation; inspect application history, recover or regenerate.\n")
+        return
     if args.command in {"add-source","list-sources"}:
         from .registry import load_registry, register_source
         from .source_detection import detect_source
@@ -80,7 +97,7 @@ def main():
                 if args.employer_id is not None:
                     board["employer_id"]=args.employer_id
                 result=register_source(args.sources,board)
-            print(json.dumps(result,indent=2,ensure_ascii=False))
+            print(json.dumps(result,indent=2,ensure_ascii=True))
         except (ValueError,OSError):
             p.exit(2,"Error: source registration or configuration is invalid; check the local registry and public board URL.\n")
         return
@@ -88,7 +105,7 @@ def main():
         try:
             reader=Agent(args.data,read_only=True)
             result=reader.eligibility(args.job_id,args.profile) if args.command=="eligibility" else reader.ranked(args.profile,args.limit,args.min_score,include_eligibility=args.with_eligibility)
-            print(json.dumps(result,indent=2,ensure_ascii=False))
+            print(json.dumps(result,indent=2,ensure_ascii=True))
         except (ValueError,OSError,sqlite3.Error):
             p.exit(2,"Error: ranking/eligibility requires an existing database, supported local profile and valid posting evidence.\n")
         return
@@ -103,7 +120,7 @@ def main():
                 result=state.scans(args.limit)
             else:
                 result=state.availability(args.job_id,args.limit)
-            print(json.dumps(result,indent=2,ensure_ascii=False))
+            print(json.dumps(result,indent=2,ensure_ascii=True))
         except (ValueError,OSError,sqlite3.Error):
             p.exit(2,"Error: discovery reports require an existing compatible local database.\n")
         return
@@ -134,16 +151,17 @@ def main():
             result=agent.import_external_jobs(records)
         elif args.command=="rank": result=agent.ranked(args.profile,args.limit,args.min_score)
         elif args.command=="preview":result=agent.preview(args.job_id,args.profile)
-        elif args.command=="prepare":result=agent.prepare(args.job_id,args.profile,variant=args.variant,track=args.track)
-        elif args.command=="approve":result=agent.store.approve(args.job_id,args.confirmation_phrase)
-        elif args.command=="mark-submitted":result=agent.store.mark_submitted(args.job_id,args.evidence)
+        elif args.command=="prepare":result=agent.prepare(args.job_id,args.profile,variant=args.variant,track=args.track,request_id=args.request_id,new_revision=args.new_revision)
+        elif args.command=="recover":result=agent.recover(args.job_id)
+        elif args.command=="approve":result=agent.store.approve(args.job_id,args.confirmation_phrase,review_token=args.review_token)
+        elif args.command=="mark-submitted":result=agent.store.mark_submitted(args.job_id,args.evidence,approval_token=args.approval_token)
         elif args.command=="status":result=agent.store.update_status(args.job_id,args.outcome,args.evidence)
         elif args.command=="export-tracker":
             from .tracker import export_append_candidates
             result=export_append_candidates(agent.store,args.output,args.include_unapplied)
         else:result=agent.store.count()
-        print(json.dumps(result,indent=2,ensure_ascii=False))
-    except (ValueError,FileNotFoundError,RuntimeError) as e:
+        print(json.dumps(result,indent=2,ensure_ascii=True))
+    except (ValueError,OSError,RuntimeError,sqlite3.Error) as e:
         p.exit(2,f"Error: {e}\n")
 
 if __name__=="__main__":main()

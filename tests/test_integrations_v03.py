@@ -52,9 +52,11 @@ def make_agent(tmp, state="prepared"):
     agent.store.upsert_job(jd)
     agent.store.set_prepared(jd.id, "data/generated/resume.docx", "data/generated/letter.docx")
     if state in ("approved","submitted"):
-        agent.store.approve(jd.id,f"APPROVE {jd.id}")
+        from workflow_helpers import prepare_approved
+        prepare_approved(agent.store,jd.id)
     if state=="submitted":
-        agent.store.mark_submitted(jd.id,"confirmation #abc123")
+        from workflow_helpers import record_submission
+        record_submission(agent.store,jd.id,"confirmation #abc123")
     return agent,jd.id
 
 class BridgeTests(unittest.TestCase):

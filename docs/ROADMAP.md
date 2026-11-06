@@ -140,6 +140,11 @@ authenticated ChatGPT qualification is completed by these changes.
 
 ## Measurement and review
 
+The accepted baseline through merged PR #27 includes #11–#13. The Issue #14
+branch adds the [recoverable local workflow](LOCAL_WORKFLOW.md), pending PR
+review and acceptance. It does not start #15, publish a release or activate any
+external integration.
+
 Collect source success/failure/empty-scan counts, duplicate provenance, missing
 descriptions, manually reviewed ranking labels, document QA findings and recorded
 application/interview outcomes. Define grain, denominator, evidence and time

@@ -25,6 +25,8 @@ def run_demo(output: Path) -> dict:
     target = next(j for j in ranked if "Cloud Infrastructure Intern" in j["title"])
     preview = agent.preview(target["job_id"], str(profile))
     packet = agent.prepare(target["job_id"], str(profile))
+    review = agent.store.review(target["job_id"])
+    retry = agent.prepare(target["job_id"], str(profile))
     result = {
         "notice": "Fictional, offline demo. No real job applications or emails sent.",
         "ingestion": ingested,
@@ -35,6 +37,11 @@ def run_demo(output: Path) -> dict:
                             "application_answers_draft": packet["answers_path"],
                             "claim_trace": packet["trace_path"], "document_qa": packet["qa_path"]},
         "application_status": packet["status"],
+        "eligibility": agent.eligibility(target["job_id"], str(profile)),
+        "local_review": {"review_token": review["review_token"], "structural_pass": review["qa"]["structural_pass"]},
+        "preparation_retry_reused_revision": retry["resume_path"] == packet["resume_path"],
+        "submission_evidence_kind": None,
+        "employer_receipt_verified": False,
         "next_step": "Review documents; nothing was submitted."
     }
     (output / "demo_summary.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

@@ -119,7 +119,8 @@ def test_repeat_preserves_prepared_approved_and_events(monkeypatch, discovery):
     ids = sorted(row["id"] for row in agent.store.list_jobs())
     for jid in ids:
         agent.store.set_prepared(jid, "fictional-resume.docx", "fictional-letter.docx")
-    agent.store.approve(ids[1], f"APPROVE {ids[1]}")
+    from workflow_helpers import prepare_approved
+    prepare_approved(agent.store, ids[1])
     before = history(agent)
     approved_at = agent.store.get_job(ids[1])["approved_at"]
     result = agent.discover(str(config), refresh=True)

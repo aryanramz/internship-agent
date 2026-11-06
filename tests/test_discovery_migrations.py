@@ -141,7 +141,7 @@ def test_version_one_upgrade_preserves_discovery_evidence_and_custom_trigger(tmp
         assert [tuple(r) for r in upgraded.execute("SELECT * FROM discovery_evidence")] == evidence
         assert upgraded.execute("SELECT 1 FROM sqlite_master WHERE name='preserve_custom_trigger'").fetchone()
         assert upgraded.execute("PRAGMA foreign_key_check").fetchall() == []
-        assert upgraded.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert upgraded.execute("PRAGMA user_version").fetchone()[0] == 3
 
 
 @pytest.mark.parametrize("target", ["jobs", "JOBS", "Jobs"])
