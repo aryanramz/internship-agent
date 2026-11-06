@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Internship Agent · Your workspace</title>
+  <link rel="stylesheet" href="/dashboard_ui.css">
+  <script src="/dashboard_ui.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <section id="login" class="login-shell" aria-labelledby="login-heading" hidden>
+    <div class="login-card">
+      <div class="brand-mark" aria-hidden="true">ia<span>↗</span></div>
+      <p class="eyebrow">YOUR LOCAL WORKSPACE</p>
+      <h1 id="login-heading">A little more direction.<br>A lot more possibility.</h1>
+      <p class="muted">Discover opportunities, prepare thoughtful applications, and keep your next steps in one place. Your data stays on this computer.</p>
+      <form id="login-form">
+        <label for="secret">Workspace secret</label>
+        <input id="secret" name="secret" type="password" autocomplete="current-password" required spellcheck="false" aria-describedby="secret-help">
+        <p id="secret-help" class="field-help">Use the secret printed in the terminal when this dashboard started.</p>
+        <button class="button primary wide" type="submit">Unlock workspace <span aria-hidden="true">→</span></button>
+      </form>
+      <p id="login-message" role="status" aria-live="polite" class="form-message"></p>
+      <div class="local-note"><span class="status-dot" aria-hidden="true"></span> Local connection · Private by default</div>
+    </div>
+  </section>
+  <div id="workspace" class="app-shell" hidden>
+    <aside class="sidebar" aria-label="Workspace navigation">
+      <a href="#overview" class="brand"><span class="brand-mark" aria-hidden="true">ia<span>↗</span></span><span>internship<span class="brand-sub">agent</span></span></a>
+      <p class="sidebar-caption">YOUR WORKSPACE</p>
+      <nav aria-label="Main navigation">
+        <a href="#overview" data-view="overview"><span class="nav-icon" aria-hidden="true">▦</span> Overview</a>
+        <a href="#opportunities" data-view="opportunities"><span class="nav-icon" aria-hidden="true">⌕</span> Opportunities</a>
+        <a href="#review" data-view="review"><span class="nav-icon" aria-hidden="true">▤</span> Review &amp; tracking</a>
+        <a href="#operations" data-view="operations"><span class="nav-icon" aria-hidden="true">◷</span> Operations</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="local-indicator"><span class="status-dot" aria-hidden="true"></span> Local workspace</div><p>One opportunity at a time.<br>Your next chapter starts here.</p><span class="sidebar-version">INTERNSHIP AGENT</span></div>
+    </aside>
+    <div class="main-shell">
+      <header class="topbar"><span class="breadcrumb">Workspace <span aria-hidden="true">/</span> <strong id="breadcrumb-current">Overview</strong></span><span class="private-pill"><span class="status-dot" aria-hidden="true"></span> Private &amp; local</span></header>
+      <main id="main" tabindex="-1"><div id="page-content"></div></main>
+      <footer class="footer">Made for a thoughtful search.<span>Local records · No automated submissions</span></footer>
+    </div>
+  </div>
+  <div id="notification" class="notification" role="status" aria-live="polite" hidden></div>
+  <dialog id="detail-dialog" class="detail-dialog" aria-labelledby="detail-heading"><div class="dialog-top"><span class="eyebrow">OPPORTUNITY DETAILS</span><button id="detail-close" class="icon-button" type="button" aria-label="Close opportunity details">×</button></div><div id="detail-content"></div></dialog>
+  <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-heading"><form id="confirm-form"><div class="dialog-top"><span class="eyebrow">REVIEW YOUR ACTION</span><button id="confirm-close" class="icon-button" type="button" aria-label="Cancel action">×</button></div><div id="confirm-content"></div><p id="confirm-error" class="form-message" role="alert"></p><div class="dialog-actions"><button id="confirm-cancel" class="button secondary" type="button">Cancel</button><button id="confirm-submit" class="button primary" type="submit">Confirm</button></div></form></dialog>
+  <noscript><p class="noscript">Enable JavaScript to use this local dashboard. The independent command-line workflow remains available.</p></noscript>
+</body>
+</html>
