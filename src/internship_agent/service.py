@@ -58,6 +58,7 @@ class Agent:
         attempted = 0
         for entry in source.get("boards",[]):
             run = None
+            source_id = None
             try:
                 entry=registry_entry(entry)
                 if not entry["enabled"]:
@@ -102,6 +103,8 @@ class Agent:
                     code = "source_error"
                 error={"board":entry.get("company","unknown") if isinstance(entry,dict) else "unknown",
                        "error":"Discovery failed; review source-health and local source configuration.", "code":code}
+                if source_id is not None:
+                    error["source_id"] = source_id
                 if isinstance(exc, SourceError):
                     if exc.http_status is not None:
                         error["http_status"]=exc.http_status

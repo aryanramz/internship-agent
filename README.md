@@ -176,3 +176,5 @@ is required or enabled.
 Your resume, real profile, application database, imported messages, generated documents and OAuth tokens must remain in the ignored local directories. The public repository includes only synthetic example data. Never paste credentials or real application records into issues. Licensed under the [MIT License](LICENSE); employment websites and third-party source APIs have their own terms.
 
 > **Important:** This project helps organize and prepare applications. It cannot guarantee an ATS pass, an interview, employment, or that a particular posting is currently open.
+
+For reviewed current-user Windows discovery scheduling and double-click controls, see [Windows scheduler](docs/WINDOWS_SCHEDULER.md). Native task lifecycle qualification remains outstanding; setup never installs without an exact approval phrase.

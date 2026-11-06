@@ -1,5 +1,7 @@
 # Safe default daily ingestion. This script does NOT apply to jobs,
 # send recruiter emails, or write to Google Sheets.
+[CmdletBinding()]
+param([switch]$EnableGmailAlerts, [switch]$EnableSheetsPreview)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
@@ -24,7 +26,7 @@ function Test-GoogleAuthorization([string]$service) {
 if ($LASTEXITCODE -ne 0) { throw 'Discovery failed.' }
 
 # Optional Gmail read only if the local account has already authorized.
-if (Test-GoogleAuthorization 'gmail') {
+if ($EnableGmailAlerts -and (Test-GoogleAuthorization 'gmail')) {
     & $python -m internship_agent.cli ingest-alerts --limit 30 |
         Out-File (Join-Path $reports "alerts-$stamp.json") -Encoding utf8
     if ($LASTEXITCODE -ne 0) { Write-Warning 'Gmail alert import failed. Check OAuth status.' }
@@ -33,7 +35,7 @@ if (Test-Path 'config\profile.json') {
     & $python -m internship_agent.cli rank --profile config/profile.json --min-score 50 --limit 50 |
         Out-File (Join-Path $reports "ranked-$stamp.json") -Encoding utf8
 }
-if ($env:INTERNSHIP_AGENT_SHEET_ID -and (Test-GoogleAuthorization 'sheets')) {
+if ($EnableSheetsPreview -and $env:INTERNSHIP_AGENT_SHEET_ID -and (Test-GoogleAuthorization 'sheets')) {
     & $python -m internship_agent.cli sync-sheet |
         Out-File (Join-Path $reports "sheet-preview-$stamp.json") -Encoding utf8
 }
