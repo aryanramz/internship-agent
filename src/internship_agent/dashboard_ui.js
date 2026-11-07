@@ -3,7 +3,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const state = { csrf: "", view: "overview", page: 1, filters: {}, detail: null, review: null, busy: false, request: 0, overview: null };
-  const names = { overview: "Overview", opportunities: "Opportunities", review: "Review & tracking", operations: "Operations" };
+  const names = { outreach: "Outreach", overview: "Overview", opportunities: "Opportunities", review: "Review & tracking", operations: "Operations" };
   const statuses = ["discovered", "shortlisted", "prepared", "approved", "submitted", "assessment", "interview", "offer", "rejected", "withdrawn"];
   const completed = new Set(["submitted", "assessment", "interview", "offer", "rejected", "withdrawn"]);
   const tracks = ["cloud", "infrastructure", "devops", "security", "software", "systems", "it"];
@@ -143,6 +143,7 @@
     loading(container);
     try {
       if (state.view === "overview") await renderOverview(container, current);
+      else if (state.view === "outreach") await window.renderOutreach(container);
       else if (state.view === "operations") await renderOperations(container, current);
       else await renderJobs(container, current);
     } catch (error) {

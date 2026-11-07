@@ -18,7 +18,8 @@ MAX_BODY=16384
 ASSETS={'/':('dashboard_ui.html','text/html; charset=utf-8'),
         '/dashboard_ui.css':('dashboard_ui.css','text/css; charset=utf-8'),
         '/dashboard_ui.js':('dashboard_ui.js','text/javascript; charset=utf-8'),
-        '/browser_assistance_ui.js':('browser_assistance_ui.js','text/javascript; charset=utf-8')}
+        '/browser_assistance_ui.js':('browser_assistance_ui.js','text/javascript; charset=utf-8'),
+        '/outreach_ui.js':('outreach_ui.js','text/javascript; charset=utf-8')}
 
 class DashboardServer(ThreadingHTTPServer):
     daemon_threads=True
@@ -88,6 +89,13 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200,Path(__file__).with_name(name).read_bytes(),mime=mime)
         sid,session=self.session()
         if not session:return self.error(401,'Unlock this local session first')
+        if url.path=='/api/outreach':
+            parsed=parse_qs(url.query,keep_blank_values=True,max_num_fields=8)
+            if any(len(v)!=1 for v in parsed.values()):return self.error(400,'Duplicate query fields')
+            query={k:v[0] for k,v in parsed.items()}
+            view=query.pop('view','contacts')
+            from .outreach_api import read
+            return self.data_call(lambda:read(self.server.root,view,query))
         if url.path=='/api/assistance' or url.path.startswith('/sandbox/application/'):
             if not self.server.sandbox_assistance:return self.error(403,'Sandbox assistance is not enabled')
             def read_assistance():
@@ -158,6 +166,12 @@ class Handler(BaseHTTPRequestHandler):
         if self.path=='/logout':
             with self.server.session_lock:self.server.sessions.pop(sid,None)
             return self.send(200,{},extra={'Set-Cookie':'ia_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'})
+        if self.path=='/api/outreach':
+            if not self.server.writer.acquire(blocking=False):return self.error(409,'An operation is running; inspect before retrying')
+            try:
+                from .outreach_api import mutate
+                return self.data_call(lambda:mutate(self.server.root,payload))
+            finally:self.server.writer.release()
         if self.path=='/api/assistance':
             if not self.server.sandbox_assistance:return self.error(403,'Sandbox assistance is not enabled')
             action=payload.get('action')

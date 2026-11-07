@@ -182,3 +182,5 @@ For reviewed current-user Windows discovery scheduling and double-click controls
 For the private browser workspace, launch `internship-dashboard` or see the [local dashboard guide](docs/LOCAL_DASHBOARD.md). It uses your local SQLite ledger and explicit confirmations; no integrations are activated.
 
 A separately enabled [local sandbox assistance adapter](docs/BROWSER_ASSISTANCE.md) demonstrates per-action field review, manual challenge handoff and durable submission-intent reconciliation. It does not submit real applications.
+
+The [local recruiter outreach workspace](docs/RECRUITER_OUTREACH.md) supports evidence-backed contacts, reviewed drafts, manual reply imports and follow-up suggestions. It never sends email or activates Gmail.
